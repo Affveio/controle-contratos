@@ -52,10 +52,10 @@
 
 
     <!-- Main Content -->
-    <main class="p-6 lg:p-10 min-h-screen">
+    <main class="p-3 md:p-6 lg:p-10 min-h-screen">
         
         <!-- Top bar Refatorado -->
-        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
+        <header class="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4 sm:gap-6 text-center sm:text-left">
             <div class="flex items-center gap-6">
                 <!-- Branding -->
                 <div class="pr-6 border-r border-white/10 hidden sm:block">
@@ -73,16 +73,16 @@
             </div>
 
             <!-- Navigation and Tools -->
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 w-full lg:w-auto">
                 <!-- Nav Buttons Overlay -->
-                <div class="flex glass p-1 rounded-2xl mr-4 border border-white/5">
-                    <button @click="currentView = 'overview'" :class="currentView === 'overview' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center">
+                <div class="flex flex-wrap justify-center glass p-1 rounded-2xl sm:mr-4 border border-white/5 w-full sm:w-auto">
+                    <button @click="currentView = 'overview'" :class="currentView === 'overview' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center flex-1 sm:flex-none justify-center">
                         Visão Geral
                     </button>
-                    <button @click="currentView = 'A369'" :class="currentView === 'A369' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300">
+                    <button @click="currentView = 'A369'" :class="currentView === 'A369' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex-1 sm:flex-none justify-center">
                         Obra A369
                     </button>
-                    <button @click="currentView = 'A375'" :class="currentView === 'A375' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300">
+                    <button @click="currentView = 'A375'" :class="currentView === 'A375' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex-1 sm:flex-none justify-center">
                         Obra A375
                     </button>
                 </div>
@@ -128,7 +128,7 @@
 
         <!-- Floating Filters Bar (Retrátil) -->
         <div x-show="showFilters" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="glass p-5 rounded-3xl mb-8 flex flex-wrap gap-4 items-end animate-fade-in border-sky-500/20 bg-sky-500/5">
-            <div class="flex-1 min-w-[200px]">
+            <div class="w-full sm:flex-1 min-w-[200px]">
                 <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Setor Estratégico</label>
                 <select x-model="filters.sector" class="w-full bg-slate-900/50 border border-white/5 rounded-xl text-xs px-4 py-2.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
                     <option value="all">Todos os Setores</option>
@@ -137,7 +137,7 @@
                     </template>
                 </select>
             </div>
-            <div class="flex-1 min-w-[200px]">
+            <div class="w-full sm:flex-1 min-w-[200px]">
                 <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Centro de Custo</label>
                 <select x-model="filters.costCenter" class="w-full bg-slate-900/50 border border-white/5 rounded-xl text-xs px-4 py-2.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
                     <option value="all">Todos os Centros</option>
@@ -146,7 +146,7 @@
                     </template>
                 </select>
             </div>
-            <div class="flex-1 min-w-[200px]">
+            <div class="w-full sm:flex-1 min-w-[200px]">
                 <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Mês de Referência</label>
                 <select x-model="filters.month" class="w-full bg-slate-900/50 border border-white/5 rounded-xl text-xs px-4 py-2.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
                     <option value="all">Acumulado Total</option>
@@ -165,9 +165,9 @@
         <!-- Novos Gráficos Executivos: Curva S e Curva ABC -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 animate-fade-in">
             <!-- Curva S - Ocupa 2/3 -->
-            <div class="glass p-8 rounded-3xl min-h-[400px] lg:col-span-2">
-                <div class="flex justify-between items-center mb-8">
-                    <div class="flex items-center space-x-4">
+            <div class="glass p-4 sm:p-8 rounded-3xl min-h-[350px] sm:min-h-[400px] lg:col-span-2">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+                    <div class="flex w-full sm:w-auto justify-between sm:justify-start items-center space-x-4">
                         <h3 class="text-xl font-bold">Previsto x Realizado</h3>
                         <div class="flex bg-slate-800 rounded-xl p-1">
                             <button @click="prevMonthPage()" :disabled="timelineIndex === 0" class="p-2 hover:bg-slate-700 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sky-400">
@@ -190,21 +190,21 @@
                         <span class="text-xs text-slate-500 font-bold uppercase tracking-wider" x-text="`Exibindo Acumulado até ${visibleMonths[visibleMonths.length-1]?.toUpperCase() || '...'}`"></span>
                     </div>
                 </div>
-                <div class="relative h-[300px]">
+                <div class="relative h-[250px] sm:h-[300px]">
                     <canvas id="sCurveChart"></canvas>
                 </div>
             </div>
             
             <!-- Curva ABC (Setores) - Ocupa 1/3 -->
-            <div class="glass p-8 rounded-3xl min-h-[400px] lg:col-span-1">
-                <div class="flex items-center justify-between space-x-4 mb-8">
+            <div class="glass p-4 sm:p-8 rounded-3xl min-h-[350px] lg:min-h-[400px] lg:col-span-1">
+                <div class="flex items-center justify-between space-x-4 mb-6 sm:mb-8">
                     <h3 class="text-xl font-bold">Contrato por Setor</h3>
                     <div class="glass px-4 py-2 rounded-2xl border border-sky-500/20 bg-sky-500/5">
                         <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Total Consolidado</span>
                         <span class="text-lg font-bold text-sky-400" x-text="formatCurrency(sectorTotal)"></span>
                     </div>
                 </div>
-                <div class="relative h-[300px] flex justify-center">
+                <div class="relative h-[250px] sm:h-[300px] flex justify-center">
                     <canvas id="abcChart"></canvas>
                 </div>
             </div>
@@ -212,8 +212,8 @@
 
         <!-- Relatório de Fechamento Mensal Profissional -->
             <!-- Gráfico de Fechamento (Única Visão) -->
-            <div class="glass p-8 rounded-3xl min-h-[400px]">
-                <div class="flex justify-between items-center mb-8">
+            <div class="glass p-4 sm:p-8 rounded-3xl min-h-[350px] lg:min-h-[400px]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
                     <div class="flex items-center space-x-4">
                         <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Fluxo Mensal de Medições (Total)</h4>
                     </div>
@@ -221,7 +221,7 @@
                         Clique em uma barra para detalhar
                     </div>
                 </div>
-                <div class="relative h-[300px]">
+                <div class="relative h-[250px] sm:h-[300px]">
                     <canvas id="closingSummaryChart"></canvas>
                 </div>
             </div>
@@ -289,9 +289,9 @@
 
         <!-- Charts Row -->
         <div class="grid grid-cols-1 gap-8 mb-12 animate-fade-in">
-            <div class="glass p-8 rounded-3xl min-h-[500px]">
-                <div class="flex justify-between items-center mb-8">
-                    <div class="flex items-center space-x-4">
+            <div class="glass p-4 sm:p-8 rounded-3xl min-h-[400px] lg:min-h-[500px]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+                    <div class="flex w-full sm:w-auto justify-between sm:justify-start items-center space-x-4">
                         <h3 class="text-xl font-bold">Evolução Mensal por Centro de Custo</h3>
                         <div class="flex bg-slate-800 rounded-xl p-1">
                             <button @click="prevMonthPage()" :disabled="timelineIndex === 0" class="p-2 hover:bg-slate-700 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sky-400">
@@ -306,7 +306,7 @@
                         <span class="text-xs text-slate-500 font-bold uppercase tracking-wider" x-text="`Exibindo ${visibleMonths[0]?.toUpperCase()} - ${visibleMonths[visibleMonths.length-1]?.toUpperCase()}`"></span>
                     </div>
                 </div>
-                <div class="relative h-[400px]">
+                <div class="relative h-[300px] sm:h-[400px]">
                     <canvas id="trendChart"></canvas>
                 </div>
             </div>
@@ -314,17 +314,17 @@
 
         <!-- Contracts Table -->
         <div class="glass rounded-3xl overflow-hidden mb-12">
-            <div class="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="p-4 sm:p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 class="text-xl font-bold">Detalhamento de Contratos</h3>
                 <div class="flex space-x-2">
-                    <input type="text" x-model="searchQuery" placeholder="Filtrar subcontratado..." class="bg-slate-800 border-none rounded-xl text-sm px-4 py-2 text-white placeholder-slate-500 w-64 focus:ring-2 focus:ring-sky-500">
+                    <input type="text" x-model="searchQuery" placeholder="Filtrar subcontratado..." class="bg-slate-800 border-none rounded-xl text-sm px-4 py-2 text-white placeholder-slate-500 w-full sm:w-64 focus:ring-2 focus:ring-sky-500">
                 </div>
             </div>
             
-            <div class="overflow-x-auto">
-                <div class="w-full">
+            <div class="overflow-x-auto custom-scrollbar">
+                <div class="w-full min-w-[800px]">
                     <!-- Thead equivalente -->
-                    <div class="grid grid-cols-12 gap-4 text-slate-400 text-xs uppercase tracking-widest border-b border-white/5 px-4 py-4">
+                    <div class="grid grid-cols-12 gap-4 text-slate-400 text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/5 px-2 sm:px-4 py-4">
                         <div class="col-span-4 font-semibold px-4">Subcontratado / Escopo</div>
                         <div class="col-span-1 font-semibold text-center cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('setor')">
                             Setor <span x-show="sortBy === 'setor'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
@@ -345,7 +345,7 @@
                     <!-- Tbody equivalente -->
                     <div class="text-sm">
                         <template x-for="contract in filteredContracts" :key="contract._uid">
-                            <div @click="selectedContract = contract" class="grid grid-cols-12 gap-4 items-center hover:bg-white/5 transition-colors group border-b border-white/5 px-4 py-4 cursor-pointer">
+                            <div @click="selectedContract = contract" class="grid grid-cols-12 gap-4 items-center hover:bg-white/5 transition-colors group border-b border-white/5 px-2 sm:px-4 py-4 cursor-pointer">
                                 <div class="col-span-4 px-4">
                                     <div class="font-bold text-slate-200 group-hover:text-sky-400 transition-colors truncate" x-text="contract['SUBCONTRATADO']"></div>
                                     <div class="text-xs text-slate-500 mt-1 truncate" x-text="contract['ESCOPO']"></div>
