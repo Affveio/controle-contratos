@@ -87,16 +87,10 @@
                     </button>
                 </div>
 
-                <input type="file" id="excelInput" class="hidden" accept=".xlsx, .xls" @change="handleFileUpload($event)">
-                
                 <!-- Settings/Filters Trigger -->
                 <button @click="showFilters = !showFilters" :class="showFilters ? 'bg-sky-500 text-white' : 'glass text-slate-400 hover:text-white'" class="p-2.5 rounded-2xl flex items-center transition-all border border-white/5">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                     <span class="ml-2 text-xs font-bold" x-text="showFilters ? 'Fechar Filtros' : 'Filtros'"></span>
-                </button>
-
-                <button @click="document.getElementById('excelInput').click()" class="glass p-2.5 rounded-2xl text-slate-400 hover:text-sky-400 transition-all border border-white/5" title="Importar Excel">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                 </button>
 
                 <div class="glass px-3 py-2 rounded-2xl flex items-center text-[10px] border border-white/5 uppercase tracking-wider font-bold text-slate-400">
