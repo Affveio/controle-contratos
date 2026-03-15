@@ -439,6 +439,59 @@
                 </div>
             </div>
         </div>
+        <!-- Modal de Detalhamento por Setor -->
+        <div x-show="selectedSectorForModal" 
+             class="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            
+            <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md" @click="selectedSectorForModal = null"></div>
+            
+            <div class="relative bg-[#0f172a] w-full max-w-2xl max-h-[90vh] rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col"
+                 @click.stop>
+                
+                <!-- Header do Modal -->
+                <div class="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                    <div>
+                        <p class="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">Detalhamento por Setor Estratégico</p>
+                        <h3 class="text-2xl font-bold text-white uppercase" x-text="selectedSectorForModal"></h3>
+                    </div>
+                    <button @click="selectedSectorForModal = null" class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all group">
+                        <svg class="w-6 h-6 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Lista de Contratos do Setor -->
+                <div class="p-8 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="space-y-4">
+                        <template x-for="c in contracts.filter(x => x['SETOR'] === selectedSectorForModal).sort((a,b) => parseNumber(b['VALOR DO CONTRATO']) - parseNumber(a['VALOR DO CONTRATO']))" :key="c._uid">
+                            <div @click="selectedSectorForModal = null; setTimeout(() => { selectedContract = c; }, 300)" class="flex justify-between items-center p-5 rounded-3xl bg-white/5 hover:bg-white/[0.08] transition-all border border-white/5 cursor-pointer group">
+                                <div class="flex-1 pr-4">
+                                    <p class="text-xs font-black text-slate-300 group-hover:text-emerald-400 transition-colors uppercase tracking-wider mb-1" x-text="c['SUBCONTRATADO']"></p>
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold truncate max-w-[250px]" x-text="c['ESCOPO']"></p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors" x-text="formatCurrency(parseNumber(c['VALOR DO CONTRATO']))"></p>
+                                    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Valor do Contrato</p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Footer do Modal -->
+                <div class="p-8 border-t border-white/5 bg-white/[0.02]">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Total do Setor</span>
+                        <span class="text-xl font-black text-sky-400" x-text="formatCurrency(contracts.filter(x => x['SETOR'] === selectedSectorForModal).reduce((acc, x) => acc + parseNumber(x['VALOR DO CONTRATO']), 0))"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -460,6 +513,7 @@
                     selectedContract: null,
                     selectedClosingMonth: null,
                     selectedClosingCC: null,
+                    selectedSectorForModal: null,
                     showSCurveValues: true,
                     sectorTotal: 0,
                     timelineIndex: 0,
@@ -1142,6 +1196,12 @@
                                     indexAxis: 'y',
                                     responsive: true,
                                     maintainAspectRatio: false,
+                                    onClick: (e, elements) => {
+                                        if (elements && elements.length > 0) {
+                                            const idx = elements[0].index;
+                                            this.selectedSectorForModal = allSectors[idx].sector;
+                                        }
+                                    },
                                     plugins: {
                                         legend: { display: false },
                                         tooltip: {
