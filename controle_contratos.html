@@ -160,7 +160,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 animate-fade-in">
             <!-- Curva S - Ocupa 2/3 -->
             <div class="glass p-4 sm:p-8 rounded-3xl min-h-[350px] sm:min-h-[400px] lg:col-span-2">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4" x-show="filters.month === 'all'">
                     <div class="flex w-full sm:w-auto justify-between sm:justify-start items-center space-x-4">
                         <h3 class="text-xl font-bold">Previsto x Realizado</h3>
                         <div class="flex bg-slate-800 rounded-xl p-1">
@@ -170,6 +170,16 @@
                             <button @click="nextMonthPage()" :disabled="timelineIndex + visibleMonthCount >= monthColumns.length" class="p-2 hover:bg-slate-700 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sky-400">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             </button>
+                        </div>
+                        <div class="hidden md:flex items-center space-x-6 ml-6">
+                            <div class="flex items-center">
+                                <div class="w-8 h-3 bg-slate-500/10 border-2 border-dashed border-slate-400 mr-2 opacity-70"></div>
+                                <span class="text-[11px] font-medium text-slate-400">Previsto Acumulado</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-8 h-3 bg-sky-500/40 border-2 border-sky-400 mr-2"></div>
+                                <span class="text-[11px] font-medium text-slate-300">Realizado Acumulado</span>
+                            </div>
                         </div>
                     </div>
                     <div class="flex space-x-4 items-center">
@@ -184,15 +194,59 @@
                         <span class="text-xs text-slate-500 font-bold uppercase tracking-wider" x-text="`Exibindo Acumulado até ${visibleMonths[visibleMonths.length-1]?.toUpperCase() || '...'}`"></span>
                     </div>
                 </div>
-                <div class="relative h-[250px] sm:h-[300px]">
+                <div class="relative h-[250px] sm:h-[300px]" x-show="filters.month === 'all'">
                     <canvas id="sCurveChart"></canvas>
+                </div>
+
+                <!-- Lista de Empresas Medidas (Exibida Apenas se um Mês for Selecionado) -->
+                <div x-show="filters.month !== 'all'" class="animate-fade-in" style="display: none;">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+                        <h3 class="text-xl font-bold">Empresas Medidas no Mês</h3>
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <select x-model="selectedSectorList" class="bg-slate-800 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-300 px-4 py-2 focus:ring-2 focus:ring-sky-500 min-w-[150px]">
+                                <option value="all">Todos os Setores</option>
+                                <template x-for="sector in [...new Set(contracts.filter(x => parseNumber(x[filters.month]) > 0).map(c => c['SETOR']))].filter(Boolean).sort()" :key="sector">
+                                    <option :value="sector" x-text="sector"></option>
+                                </template>
+                            </select>
+                            <div class="text-[10px] whitespace-nowrap font-bold text-slate-500 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-xl border border-white/5" x-text="'Mês: ' + filters.month"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-y-auto custom-scrollbar pr-2 h-[250px] sm:h-[300px]">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <template x-for="c in contracts.filter(x => parseNumber(x[filters.month]) > 0 && (selectedSectorList === 'all' || x['SETOR'] === selectedSectorList)).sort((a,b) => parseNumber(b[filters.month]) - parseNumber(a[filters.month]))" :key="c._uid + '_list'">
+                                <div class="flex justify-between items-center p-4 rounded-2xl bg-slate-800/50 hover:bg-white/[0.08] border border-white/5 transition-all cursor-pointer group" @click="selectedContract = c">
+                                    <div class="flex-1 pr-4 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <div class="w-2 h-2 rounded-full transition-transform group-hover:scale-150" :style="'background-color: ' + (sectorColors[c['SETOR']] || '#94a3b8')"></div>
+                                            <p class="text-xs font-bold text-slate-300 group-hover:text-white transition-colors uppercase truncate" x-text="c['SUBCONTRATADO']"></p>
+                                        </div>
+                                        <div class="flex items-center gap-2 ml-4">
+                                            <span class="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-slate-400" :style="'color: ' + (sectorColors[c['SETOR']] || '#94a3b8')" x-text="(c['SETOR'] || 'N/A').substring(0,10)"></span>
+                                            <p class="text-[10px] text-slate-500 uppercase font-medium truncate" x-text="c['ESCOPO']"></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right whitespace-nowrap">
+                                        <p class="text-sm font-bold text-sky-400 group-hover:text-white transition-colors" x-text="formatCurrency(parseNumber(c[filters.month]))"></p>
+                                        <p class="text-[9px] font-bold text-emerald-500/80 uppercase tracking-widest mt-0.5">Medido</p>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="contracts.filter(x => parseNumber(x[filters.month]) > 0).length === 0">
+                                <div class="col-span-full text-center p-8 text-slate-500 font-bold uppercase tracking-widest text-sm border-2 border-dashed border-white/5 rounded-3xl">
+                                    Nenhuma medição registrada para este mês.
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <!-- Curva ABC (Setores) - Ocupa 1/3 -->
             <div class="glass p-4 sm:p-8 rounded-3xl min-h-[350px] lg:min-h-[400px] lg:col-span-1">
                 <div class="flex items-center justify-between space-x-4 mb-6 sm:mb-8">
-                    <h3 class="text-xl font-bold">Contrato por Setor</h3>
+                    <h3 class="text-xl font-bold" x-text="filters.month === 'all' ? 'Contrato por Setor' : 'Medição Mensal'">Contrato por Setor</h3>
                     <div class="glass px-4 py-2 rounded-2xl border border-sky-500/20 bg-sky-500/5">
                         <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Total Consolidado</span>
                         <span class="text-lg font-bold text-sky-400" x-text="formatCurrency(sectorTotal)"></span>
@@ -316,46 +370,52 @@
             </div>
             
             <div class="overflow-x-auto custom-scrollbar">
-                <div class="w-full min-w-[800px]">
+                <div class="w-full min-w-[1000px]">
                     <!-- Thead equivalente -->
-                    <div class="grid grid-cols-12 gap-4 text-slate-400 text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/5 px-2 sm:px-4 py-4">
-                        <div class="col-span-4 font-semibold px-4">Subcontratado / Escopo</div>
-                        <div class="col-span-1 font-semibold text-center cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('setor')">
+                    <div class="grid grid-cols-[3fr_1.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 text-slate-400 text-[10px] sm:text-xs uppercase tracking-widest border-b border-white/5 px-2 sm:px-4 py-4">
+                        <div class="font-semibold px-4 cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('subcontratado')">
+                            Subcontratado / Escopo <span x-show="sortBy === 'subcontratado'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
+                        </div>
+                        <div class="font-semibold text-center cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('setor')">
                             Setor <span x-show="sortBy === 'setor'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
                         </div>
-                        <div class="col-span-2 font-semibold text-right cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('valor_total')">
+                        <div class="font-semibold text-right cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('valor_total')">
                             Valor Total <span x-show="sortBy === 'valor_total'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
                         </div>
-                        <div class="col-span-2 font-semibold text-right cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('medido')">
-                            Medido <span x-show="sortBy === 'medido'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
+                        <div class="font-semibold text-right pr-6 cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('medido')">
+                            <span x-text="filters.month === 'all' ? 'Medido' : 'Medição Mês'"></span> <span x-show="sortBy === 'medido'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
                         </div>
-                        <div class="col-span-1 font-semibold text-center cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('progresso')">
+                        <div class="font-semibold text-center cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('progresso')">
                             Progresso <span x-show="sortBy === 'progresso'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
                         </div>
-                        <div class="col-span-2 font-semibold text-right px-4 cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('saldo')">
+                        <div class="font-semibold text-right px-4 cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('saldo')">
                             Saldo <span x-show="sortBy === 'saldo'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
+                        </div>
+                        <div class="font-semibold text-center cursor-pointer hover:text-white transition-colors select-none" @click="toggleSort('meses_restantes')">
+                            Meses Rest. <span x-show="sortBy === 'meses_restantes'" x-text="sortDesc ? '↓' : '↑'" class="text-sky-400 ml-1"></span>
                         </div>
                     </div>
                     <!-- Tbody equivalente -->
                     <div class="text-sm">
                         <template x-for="contract in filteredContracts" :key="contract._uid">
-                            <div @click="selectedContract = contract" class="grid grid-cols-12 gap-4 items-center hover:bg-white/5 transition-colors group border-b border-white/5 px-2 sm:px-4 py-4 cursor-pointer">
-                                <div class="col-span-4 px-4">
+                            <div @click="selectedContract = contract" class="grid grid-cols-[3fr_1.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 items-center hover:bg-white/5 transition-colors group border-b border-white/5 px-2 sm:px-4 py-4 cursor-pointer">
+                                <div class="px-4">
                                     <div class="font-bold text-slate-200 group-hover:text-sky-400 transition-colors truncate" x-text="contract['SUBCONTRATADO']"></div>
                                     <div class="text-xs text-slate-500 mt-1 truncate" x-text="contract['ESCOPO']"></div>
                                 </div>
-                                <div class="col-span-1 text-center">
+                                <div class="text-center">
                                     <span class="px-3 py-1 rounded-full bg-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400" x-text="(contract['SETOR'] || 'N/A').substring(0,10)"></span>
                                 </div>
-                                <div class="col-span-2 font-semibold text-right text-slate-300" x-text="formatCurrency(contract['VALOR DO CONTRATO'])"></div>
-                                <div class="col-span-2 font-semibold text-right text-emerald-400" x-text="formatCurrency(contract['VALOR MEDIDO'])"></div>
-                                <div class="col-span-1 flex flex-col items-center justify-center">
+                                <div class="font-semibold text-right text-slate-300" x-text="formatCurrency(contract['VALOR DO CONTRATO'])"></div>
+                                <div class="font-semibold text-right pr-6 text-emerald-400" x-text="formatCurrency(filters.month === 'all' ? contract['VALOR MEDIDO'] : parseNumber(contract[filters.month]))"></div>
+                                <div class="flex flex-col items-center justify-center">
                                     <div class="w-full h-1.5 bg-slate-800 rounded-full mb-1 overflow-hidden">
-                                        <div class="h-full bg-sky-500 rounded-full" :style="`width: ${Math.min((contract['VALOR MEDIDO'] / (contract['VALOR DO CONTRATO'] || 1)) * 100, 100)}%`"></div>
+                                        <div class="h-full bg-sky-500 rounded-full" :style="'width: ' + Math.min(((filters.month === 'all' ? contract['VALOR MEDIDO'] : parseNumber(contract[filters.month])) / (contract['VALOR DO CONTRATO'] || 1)) * 100, 100) + '%'"></div>
                                     </div>
-                                    <span class="text-[10px] font-bold text-slate-400" x-text="Math.round((contract['VALOR MEDIDO'] / (contract['VALOR DO CONTRATO'] || 1)) * 100) + '%'"></span>
+                                    <span class="text-[10px] font-bold text-slate-400" x-text="Math.round(((filters.month === 'all' ? contract['VALOR MEDIDO'] : parseNumber(contract[filters.month])) / (contract['VALOR DO CONTRATO'] || 1)) * 100) + '%'"></span>
                                 </div>
-                                <div class="col-span-2 font-semibold text-right px-4" :class="contract['SALDO'] < 0 ? 'text-rose-400' : 'text-emerald-400'" x-text="formatCurrency(contract['SALDO'])"></div>
+                                <div class="font-semibold text-right px-4" :class="contract['SALDO'] < 0 ? 'text-rose-400' : 'text-emerald-400'" x-text="formatCurrency(contract['SALDO'])"></div>
+                                <div class="font-bold text-center text-sky-400 bg-sky-500/10 rounded-xl py-1 mx-2" x-text="contract['MESES RESTANTES'] !== undefined && contract['MESES RESTANTES'] !== '' ? parseNumber(contract['MESES RESTANTES']) : '-'"></div>
                             </div>
                         </template>
                     </div>
@@ -398,6 +458,47 @@
                         <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
                             <p class="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-1">Total Medido</p>
                             <p class="text-xl font-bold text-emerald-400" x-text="formatCurrency(selectedContract ? selectedContract['VALOR MEDIDO'] : 0)"></p>
+                        </div>
+                    </div>
+
+                    <!-- Informações Cadastrais -->
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Informações Cadastrais</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Obra</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['OBRA'] || '-') : '-'"></p>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Setor</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['SETOR'] || '-') : '-'"></p>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">CNPJ / CPF</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['CNPJ / CPF'] || '-') : '-'"></p>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Nº do Contrato</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['Nº DE CONTRATO'] || '-') : '-'"></p>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Cód. SAP Fornecedor</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['CODIGO SAP FOR.'] || '-') : '-'"></p>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Cód. SAP Contrato</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['COD. SAP CONTRATO'] || '-') : '-'"></p>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Início do Contrato</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract && selectedContract['INICIO_CONTRATO'] ? selectedContract['INICIO_CONTRATO'].toString().split('T')[0].split('-').reverse().join('/') : '-'"></p>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Término do Contrato</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract && selectedContract['TERMINO_CONTRATO'] ? selectedContract['TERMINO_CONTRATO'].toString().split('T')[0].split('-').reverse().join('/') : '-'"></p>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5 md:col-span-4">
+                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">REIDI (Lucro presumido: 3,65% / Lucro real: 9,25%)</p>
+                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['REIDI'] || '-') : '-'"></p>
                         </div>
                     </div>
 
@@ -447,7 +548,8 @@
              x-transition:enter-end="opacity-100"
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0">
+             x-transition:leave-end="opacity-0"
+             x-cloak>
             
             <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md" @click="selectedSectorForModal = null"></div>
             
@@ -468,15 +570,15 @@
                 <!-- Lista de Contratos do Setor -->
                 <div class="p-8 overflow-y-auto custom-scrollbar flex-1">
                     <div class="space-y-4">
-                        <template x-for="c in contracts.filter(x => x['SETOR'] === selectedSectorForModal).sort((a,b) => parseNumber(b['VALOR DO CONTRATO']) - parseNumber(a['VALOR DO CONTRATO']))" :key="c._uid">
+                        <template x-for="c in contracts.filter(x => x['SETOR'] === selectedSectorForModal && (filters.month === 'all' || parseNumber(x[filters.month]) > 0)).sort((a,b) => filters.month === 'all' ? parseNumber(b['VALOR DO CONTRATO']) - parseNumber(a['VALOR DO CONTRATO']) : parseNumber(b[filters.month]) - parseNumber(a[filters.month]))" :key="c._uid">
                             <div @click="selectedSectorForModal = null; setTimeout(() => { selectedContract = c; }, 300)" class="flex justify-between items-center p-5 rounded-3xl bg-white/5 hover:bg-white/[0.08] transition-all border border-white/5 cursor-pointer group">
                                 <div class="flex-1 pr-4">
                                     <p class="text-xs font-black text-slate-300 group-hover:text-emerald-400 transition-colors uppercase tracking-wider mb-1" x-text="c['SUBCONTRATADO']"></p>
                                     <p class="text-[10px] text-slate-500 uppercase font-bold truncate max-w-[250px]" x-text="c['ESCOPO']"></p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors" x-text="formatCurrency(parseNumber(c['VALOR DO CONTRATO']))"></p>
-                                    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Valor do Contrato</p>
+                                    <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors" x-text="formatCurrency(filters.month === 'all' ? parseNumber(c['VALOR DO CONTRATO']) : parseNumber(c[filters.month]))"></p>
+                                    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5" x-text="filters.month === 'all' ? 'Valor do Contrato' : ('Medição ' + filters.month)"></p>
                                 </div>
                             </div>
                         </template>
@@ -487,7 +589,75 @@
                 <div class="p-8 border-t border-white/5 bg-white/[0.02]">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Total do Setor</span>
-                        <span class="text-xl font-black text-sky-400" x-text="formatCurrency(contracts.filter(x => x['SETOR'] === selectedSectorForModal).reduce((acc, x) => acc + parseNumber(x['VALOR DO CONTRATO']), 0))"></span>
+                        <span class="text-xl font-black text-sky-400" x-text="formatCurrency(contracts.filter(x => x['SETOR'] === selectedSectorForModal && (filters.month === 'all' || parseNumber(x[filters.month]) > 0)).reduce((acc, x) => acc + (filters.month === 'all' ? parseNumber(x['VALOR DO CONTRATO']) : parseNumber(x[filters.month])), 0))"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Detalhamento por Mês e CC -->
+        <div x-show="selectedClosingMonth" 
+             class="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             x-cloak>
+            
+            <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md" @click="selectedClosingMonth = null; selectedClosingCC = null;"></div>
+            
+            <div class="relative bg-[#0f172a] w-full max-w-2xl max-h-[90vh] rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col"
+                 @click.stop>
+                
+                <!-- Header do Modal -->
+                <div class="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                    <div>
+                        <p class="text-[10px] font-black text-sky-400 uppercase tracking-[0.2em] mb-1" x-text="selectedClosingCC && selectedClosingCC !== 'all' ? 'Detalhamento por Centro de Custo' : 'Detalhamento Mensal'"></p>
+                        <h3 class="text-2xl font-bold text-white uppercase flex items-center gap-3">
+                            <span x-text="selectedClosingMonth"></span>
+                            <template x-if="selectedClosingCC && selectedClosingCC !== 'all'">
+                                <span class="text-slate-500 text-sm font-normal flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <span x-text="(window.COST_CENTER_NAMES && window.COST_CENTER_NAMES[selectedClosingCC]) ? (selectedClosingCC + ' - ' + window.COST_CENTER_NAMES[selectedClosingCC]) : selectedClosingCC"></span>
+                                </span>
+                            </template>
+                        </h3>
+                    </div>
+                    <button @click="selectedClosingMonth = null; selectedClosingCC = null;" class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all group">
+                        <svg class="w-6 h-6 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Lista de Contratos do Mês/CC -->
+                <div class="p-8 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="space-y-4">
+                        <template x-for="c in contracts.filter(x => parseNumber(x[selectedClosingMonth]) > 0 && (!selectedClosingCC || selectedClosingCC === 'all' || x['CENTRO DE CUSTO'] === selectedClosingCC)).sort((a,b) => parseNumber(b[selectedClosingMonth]) - parseNumber(a[selectedClosingMonth]))" :key="c._uid + '_closing'">
+                            <div @click="selectedClosingMonth = null; selectedClosingCC = null; setTimeout(() => { selectedContract = c; }, 300)" class="flex justify-between items-center p-5 rounded-3xl bg-white/5 hover:bg-white/[0.08] transition-all border border-white/5 cursor-pointer group">
+                                <div class="flex-1 pr-4">
+                                    <p class="text-xs font-black text-slate-300 group-hover:text-sky-400 transition-colors uppercase tracking-wider mb-1" x-text="c['SUBCONTRATADO']"></p>
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold truncate max-w-[250px]" x-text="c['ESCOPO']"></p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-sky-400 group-hover:text-white transition-colors" x-text="formatCurrency(parseNumber(c[selectedClosingMonth]))"></p>
+                                    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5" x-text="'Medição ' + selectedClosingMonth"></p>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="contracts.filter(x => parseNumber(x[selectedClosingMonth]) > 0 && (!selectedClosingCC || selectedClosingCC === 'all' || x['CENTRO DE CUSTO'] === selectedClosingCC)).length === 0">
+                            <div class="text-center p-10 text-slate-500 font-bold uppercase tracking-widest text-sm border-2 border-dashed border-white/5 rounded-3xl">
+                                Nenhum registro medido para este detalhamento.
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Footer do Modal -->
+                <div class="p-8 border-t border-white/5 bg-white/[0.02]">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Medido</span>
+                        <span class="text-xl font-black text-sky-400" x-text="formatCurrency(contracts.filter(x => parseNumber(x[selectedClosingMonth]) > 0 && (!selectedClosingCC || selectedClosingCC === 'all' || x['CENTRO DE CUSTO'] === selectedClosingCC)).reduce((acc, x) => acc + parseNumber(x[selectedClosingMonth]), 0))"></span>
                     </div>
                 </div>
             </div>
@@ -514,6 +684,8 @@
                     selectedClosingMonth: null,
                     selectedClosingCC: null,
                     selectedSectorForModal: null,
+                    selectedSectorList: 'all',
+                    sectorColors: {},
                     showSCurveValues: true,
                     sectorTotal: 0,
                     timelineIndex: 0,
@@ -527,7 +699,14 @@
                         this.resetTimeline();
                         
                         this.$watch('showSCurveValues', () => this.updateCharts());
-                        this.$watch('filters', () => this.updateCharts());
+                        this.$watch('filters', (newV, oldV) => {
+                            this.updateCharts();
+                            // Pop modal directally when user selects a specific month filter
+                            if (newV && newV.month && newV.month !== 'all' && (!oldV || newV.month !== oldV.month)) {
+                                this.selectedClosingMonth = newV.month;
+                                this.selectedClosingCC = 'all';
+                            }
+                        });
                         this.$watch('timelineIndex', () => this.updateCharts());
                         this.$watch('currentView', () => {
                             this.filters.costCenter = 'all';
@@ -585,14 +764,18 @@
                                 
                                 const isMonth = /^[A-Z]{3}(\/|\-|\.)\d{2}$/i.test(normalizedKey);
                                 
+                                let finalKey = normalizedKey;
+                                if (finalKey === 'RESTANTE (MÊS)' || finalKey.includes('RESTANTE')) finalKey = 'MESES RESTANTES';
+                                if (finalKey.includes('REIDI')) finalKey = 'REIDI';
+                                
                                 if (isMonth) {
-                                    newRow[normalizedKey] = this.parseNumber(val);
-                                } else if (['CENTRO DE CUSTO', 'SETOR', 'OBRA', 'ESCOPO', 'SUBCONTRATADO'].includes(normalizedKey)) {
-                                    newRow[normalizedKey] = val ? val.toString().trim().toUpperCase() : '';
-                                } else if (normalizedKey === '%' || normalizedKey.includes('VALOR') || normalizedKey.includes('SALDO')) {
-                                    newRow[normalizedKey] = this.parseNumber(val);
+                                    newRow[finalKey] = this.parseNumber(val);
+                                } else if (['CENTRO DE CUSTO', 'SETOR', 'OBRA', 'ESCOPO', 'SUBCONTRATADO'].includes(finalKey)) {
+                                    newRow[finalKey] = val ? val.toString().trim().toUpperCase() : '';
+                                } else if (finalKey === '%' || finalKey.includes('VALOR') || finalKey.includes('SALDO') || finalKey === 'MESES RESTANTES') {
+                                    newRow[finalKey] = this.parseNumber(val);
                                 } else {
-                                    newRow[normalizedKey] = val;
+                                    newRow[finalKey] = val;
                                 }
                             });
                             newRow.VALOR_TOTAL = this.parseNumber(newRow['VALOR DO CONTRATO']);
@@ -688,10 +871,20 @@
                             );
                         }
                         
+                        // Filter by month (only show contracts with measurements in selected month)
+                        if (this.filters.month !== 'all') {
+                            items = items.filter(c => this.parseNumber(c[this.filters.month]) > 0);
+                        }
+                        
                         items = items.sort((a, b) => {
                             if (this.sortBy === 'setor') {
                                 let strA = (a['SETOR'] || '').toString().toLowerCase();
                                 let strB = (b['SETOR'] || '').toString().toLowerCase();
+                                let comp = strA.localeCompare(strB);
+                                return this.sortDesc ? -comp : comp;
+                            } else if (this.sortBy === 'subcontratado') {
+                                let strA = (a['SUBCONTRATADO'] || '').toString().toLowerCase();
+                                let strB = (b['SUBCONTRATADO'] || '').toString().toLowerCase();
                                 let comp = strA.localeCompare(strB);
                                 return this.sortDesc ? -comp : comp;
                             }
@@ -703,14 +896,19 @@
                                 valA = a['VALOR DO CONTRATO'] || 0;
                                 valB = b['VALOR DO CONTRATO'] || 0;
                             } else if (this.sortBy === 'medido') {
-                                valA = a['VALOR MEDIDO'] || 0;
-                                valB = b['VALOR MEDIDO'] || 0;
+                                valA = this.filters.month === 'all' ? (a['VALOR MEDIDO'] || 0) : this.parseNumber(a[this.filters.month]);
+                                valB = this.filters.month === 'all' ? (b['VALOR MEDIDO'] || 0) : this.parseNumber(b[this.filters.month]);
                             } else if (this.sortBy === 'saldo') {
                                 valA = a['SALDO'] || 0;
                                 valB = b['SALDO'] || 0;
                             } else if (this.sortBy === 'progresso') {
-                                valA = (a['VALOR MEDIDO'] || 0) / (a['VALOR DO CONTRATO'] || 1);
-                                valB = (b['VALOR MEDIDO'] || 0) / (b['VALOR DO CONTRATO'] || 1);
+                                const medA = this.filters.month === 'all' ? (a['VALOR MEDIDO'] || 0) : this.parseNumber(a[this.filters.month]);
+                                const medB = this.filters.month === 'all' ? (b['VALOR MEDIDO'] || 0) : this.parseNumber(b[this.filters.month]);
+                                valA = medA / (a['VALOR DO CONTRATO'] || 1);
+                                valB = medB / (b['VALOR DO CONTRATO'] || 1);
+                            } else if (this.sortBy === 'meses_restantes') {
+                                valA = a['MESES RESTANTES'] || 0;
+                                valB = b['MESES RESTANTES'] || 0;
                             }
                             
                             return this.sortDesc ? valB - valA : valA - valB;
@@ -778,7 +976,7 @@
 
                         return [
                             { label: 'Valor Total Contratado', value: total, trend: trendTotal.toFixed(1), icon: 'M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3z M2 17l10 5 10-5M2 12l10 5 10-5M2 7l10 5 10-5' },
-                            { label: 'Acumulado Medido', value: medido, trend: trendMedido.toFixed(1), icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+                            { label: this.filters.month !== 'all' ? 'Medição Mensal' : 'Acumulado Medido', value: medido, trend: trendMedido.toFixed(1), icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
                             { label: 'Saldo de Contratos', value: saldo, trend: trendSaldo.toFixed(1), icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' }
                         ];
                     },
@@ -901,7 +1099,6 @@
                                 trendChartMapping.push({ month: m, cc: cc }); // Salvar metadados
                                 
                                 const val = realCcMap[cc][m] || 0;
-// ... (resto do loop permanece igual, vou substituir o bloco inteiro para garantir consistência)
                                 trendDataReal.push(val);
                                 bgColors.push(basePalette[idx % basePalette.length]);
                                 
@@ -1115,7 +1312,7 @@
                                                 display: (context) => this.showSCurveValues && dataReal[context.dataIndex] > 0,
                                                 anchor: 'end',
                                                 align: 'top',
-                                                offset: 8,
+                                                offset: 24,
                                                 color: function(context) {
                                                     const val = sCurveVariations[context.dataIndex];
                                                     return val >= 0 ? '#4ade80' : '#f87171';
@@ -1140,13 +1337,17 @@
                                     maintainAspectRatio: false,
                                     interaction: { mode: 'index', intersect: false },
                                     plugins: {
-                                        legend: { display: true, position: 'top', labels: { color: '#94a3b8' } },
+                                        legend: { display: false },
                                         datalabels: { display: false } // Desativar global para não aparecer no Previsto
+                                    },
+                                    layout: {
+                                        padding: { top: 40 }
                                     },
                                     scales: {
                                         x: { ticks: { color: '#94a3b8', font: { size: 10 } } },
                                         y: { 
                                             beginAtZero: true,
+                                            grace: '20%',
                                             ticks: { 
                                                 color: '#94a3b8',
                                                 callback: (v) => v >= 1000000 ? 'R$ ' + (v/1000000).toFixed(1) + 'M' : 'R$ ' + (v/1000).toFixed(0) + 'k'
@@ -1159,23 +1360,32 @@
 
                         // 7. Curva ABC (Setores)
                         if (abcCanvas) {
-                            const sectorMap = {};
+                            const sectorTotals = {};
                             activeContracts.forEach(c => {
                                 // Limpar espaços do setor para agrupar corretamente
                                 let sector = c['SETOR'] || 'NÃO INFORMADO';
                                 if (typeof sector === 'string') sector = sector.trim();
-                                sectorMap[sector] = (sectorMap[sector] || 0) + (this.parseNumber(c['VALOR DO CONTRATO']));
+                                const val = this.filters.month === 'all' ? this.parseNumber(c['VALOR DO CONTRATO']) : this.parseNumber(c[this.filters.month]);
+                                if (val > 0) {
+                                    sectorTotals[sector] = (sectorTotals[sector] || 0) + val;
+                                }
                             });
                             
                             // Todos os setores ordenados do maior para o menor
-                            const allSectors = Object.keys(sectorMap)
-                                .map(s => ({ sector: s, total: sectorMap[s] }))
+                            const allSectors = Object.keys(sectorTotals)
+                                .map(s => ({ sector: s, total: sectorTotals[s] }))
                                 .filter(item => item.total > 0)
                                 .sort((a, b) => b.total - a.total);
 
                             this.sectorTotal = allSectors.reduce((acc, s) => acc + s.total, 0);
 
                             const basePalette = ['#38bdf8', '#fb923c', '#4ade80', '#f472b6', '#a78bfa', '#94a3b8', '#facc15', '#2dd4bf', '#a3e635', '#f87171', '#c084fc', '#818cf8'];
+                            // Salvar no estado para usar na lista HTML
+                            this.sectorColors = {};
+                            allSectors.forEach((s, idx) => {
+                                this.sectorColors[s.sector] = basePalette[idx % basePalette.length];
+                            });
+
                             // Garantir que não faltem cores
                             const paletteDoughnut = allSectors.map((_, i) => basePalette[i % basePalette.length]);
 
@@ -1307,7 +1517,10 @@
                                         if (elements.length > 0) {
                                             const index = elements[0].index;
                                             const month = monthsAll[index];
-                                            if (month) this.selectedClosingMonth = month;
+                                            if (month) {
+                                                this.selectedClosingMonth = month;
+                                                this.selectedClosingCC = 'all'; // Clear CC filter for absolute month view
+                                            }
                                         }
                                     },
                                     scales: {
