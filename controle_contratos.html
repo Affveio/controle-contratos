@@ -676,6 +676,26 @@
                         if (this.currentView !== 'overview') filtered = filtered.filter(c => c['OBRA']?.toString().toUpperCase() === this.currentView);
                         if (this.filters.sector !== 'all') filtered = filtered.filter(c => c['SETOR'] === this.filters.sector);
                         if (this.filters.costCenter !== 'all') filtered = filtered.filter(c => c['CENTRO DE CUSTO'] === this.filters.costCenter);
+                        if (this.filters.month !== 'all') {
+                            const monthsMap = {'JAN':'01', 'FEV':'02', 'MAR':'03', 'ABR':'04', 'MAI':'05', 'JUN':'06', 'JUL':'07', 'AGO':'08', 'SET':'09', 'OUT':'10', 'NOV':'11', 'DEZ':'12'};
+                            const parts = this.filters.month.split('/');
+                            if (parts.length === 2 && monthsMap[parts[0].toUpperCase()]) {
+                                const year = '20' + parts[1];
+                                const monthNum = monthsMap[parts[0].toUpperCase()];
+                                const daysInMonth = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
+                                
+                                const monthStart = `${year}-${monthNum}-01`;
+                                const monthEnd = `${year}-${monthNum}-${daysInMonth}`;
+                                
+                                filtered = filtered.filter(c => {
+                                    let valid = true;
+                                    if (c['INICIO_CONTRATO'] && c['INICIO_CONTRATO'] > monthEnd) valid = false;
+                                    if (c['TERMINO_CONTRATO'] && c['TERMINO_CONTRATO'] < monthStart) valid = false;
+                                    return valid;
+                                });
+                            }
+                        }
+                        
                         return filtered;
                     },
 
