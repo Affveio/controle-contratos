@@ -485,7 +485,7 @@
                                     <p class="text-[10px] text-slate-500 uppercase font-bold truncate max-w-[250px]" x-text="c['ESCOPO']"></p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors" x-text="formatCurrency(parseNumber(c['VALOR DO CONTRATO']))"></p>
+                                    <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors" x-text="formatCurrency(c.isNewThisMonth ? parseNumber(c['VALOR DO CONTRATO']) : 0)"></p>
                                     <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Valor do Contrato</p>
                                 </div>
                             </div>
@@ -497,7 +497,7 @@
                 <div class="p-8 border-t border-white/5 bg-white/[0.02]">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Total do Setor</span>
-                        <span class="text-xl font-black text-sky-400" x-text="formatCurrency(contracts.filter(x => x['SETOR'] === selectedSectorForModal).reduce((acc, x) => acc + parseNumber(x['VALOR DO CONTRATO']), 0))"></span>
+                        <span class="text-xl font-black text-sky-400" x-text="formatCurrency(contracts.filter(x => x['SETOR'] === selectedSectorForModal).reduce((acc, x) => acc + (x.isNewThisMonth ? parseNumber(x['VALOR DO CONTRATO']) : 0), 0))"></span>
                     </div>
                 </div>
             </div>
@@ -793,6 +793,12 @@
                             c['SALDO'] = this.parseNumber(c['VALOR DO CONTRATO']) - baseAcumuladoAteMes;
                             c['PROGRESSO'] = (this.parseNumber(c['VALOR DO CONTRATO']) > 0) ? (baseAcumuladoAteMes / this.parseNumber(c['VALOR DO CONTRATO'])) * 100 : 0;
                             
+                            c.isNewThisMonth = true;
+                            if (shouldFilterByDate && monthStart && monthEnd && !this.isAccumulated) {
+                                const didStartThisMonth = dInicio && (dInicio >= monthStart && dInicio <= monthEnd);
+                                c.isNewThisMonth = !!didStartThisMonth;
+                            }
+                            
                             return c;
                         }).filter(Boolean);
                     },
@@ -863,7 +869,7 @@
 
                         // Calcular valores atuais
                         if (this.filters.month !== 'all') {
-                            total = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
+                            total = contracts.reduce((acc, c) => acc + (c.isNewThisMonth ? this.parseNumber(c['VALOR DO CONTRATO']) : 0), 0);
                             // Agora MEDIDO já vem pré-processado pela propriedade 'contracts' (dinamicamente acumulado ou pontual)
                             medido = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR MEDIDO'])), 0);
                             saldo = contracts.reduce((acc, c) => acc + (this.parseNumber(c['SALDO'])), 0);
@@ -1404,7 +1410,7 @@
                                 
                                 // Se for 'Apenas Mês Solicitado' (!isAccumulated), mapeamos o VALOR MEDIDO filtrado daquele mes ou o total do contrato?
                                 // Como a métrica é "Valor do Contrato", usamos a key original ou calculada que determina o peso do contrato validado
-                                sectorMap[sector] = (sectorMap[sector] || 0) + (this.parseNumber(c['VALOR DO CONTRATO']));
+                                sectorMap[sector] = (sectorMap[sector] || 0) + (c.isNewThisMonth ? this.parseNumber(c['VALOR DO CONTRATO']) : 0);
                             });
                             
                             // Todos os setores ordenados do maior para o menor
