@@ -141,17 +141,7 @@
                 </select>
             </div>
             <div class="w-full sm:flex-1 min-w-[200px]">
-                <div class="flex justify-between items-center mb-2">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mês de Referência</label>
-                    <label class="flex items-center cursor-pointer group" x-show="filters.month !== 'all'">
-                        <span class="mr-2 text-[9px] font-bold text-slate-500 uppercase transition-colors group-hover:text-slate-400">Modo Acumulado</span>
-                        <div class="relative">
-                            <input type="checkbox" x-model="isAccumulated" class="sr-only">
-                            <div class="w-6 h-3 bg-slate-800 rounded-full border border-white/5 transition-colors" :class="isAccumulated ? 'bg-sky-500/20 group-hover:border-sky-500/50' : 'group-hover:border-slate-500'"></div>
-                            <div class="absolute left-0.5 top-0.5 w-2 h-2 rounded-full transition-transform duration-200" :class="isAccumulated ? 'translate-x-3 bg-sky-400' : 'bg-slate-500'"></div>
-                        </div>
-                    </label>
-                </div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Mês de Referência</label>
                 <select x-model="filters.month" class="w-full bg-slate-900/50 border border-white/5 rounded-xl text-xs px-4 py-2.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
                     <option value="all">Acumulado Total</option>
                     <template x-for="m in monthColumns" :key="m">
@@ -177,7 +167,7 @@
                             <button @click="prevMonthPage()" :disabled="timelineIndex === 0" class="p-2 hover:bg-slate-700 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sky-400">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                             </button>
-                            <button @click="nextMonthPage()" :disabled="timelineIndex + visibleMonthCount >= (filters.month !== 'all' ? monthColumns.indexOf(filters.month) + 1 : monthColumns.length)" class="p-2 hover:bg-slate-700 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sky-400">
+                            <button @click="nextMonthPage()" :disabled="timelineIndex + visibleMonthCount >= monthColumns.length" class="p-2 hover:bg-slate-700 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sky-400">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             </button>
                         </div>
@@ -191,7 +181,7 @@
                             </div>
                             <span class="ml-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter group-hover:text-slate-300 transition-colors">Exibir Valores</span>
                         </label>
-                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wider" x-text="(!isAccumulated && filters.month !== 'all') ? `Apenas Mês Solicitado: ${filters.month.toUpperCase()}` : `Exibindo Acumulado até ${visibleMonths[visibleMonths.length-1]?.toUpperCase() || '...'}`"></span>
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wider" x-text="`Exibindo Acumulado até ${visibleMonths[visibleMonths.length-1]?.toUpperCase() || '...'}`"></span>
                     </div>
                 </div>
                 <div class="relative h-[250px] sm:h-[300px]">
@@ -427,12 +417,12 @@
                     <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Histórico de Medições Mensais</h4>
                     <div class="space-y-3">
                         <template x-for="m in monthColumns" :key="m">
-                            <div x-show="selectedContract && parseNumber(selectedContract?.[m]) > 0" class="flex justify-between items-center p-4 rounded-2xl bg-white/5 hover:bg-white/[0.08] transition-all group">
+                            <div x-show="selectedContract && parseNumber(selectedContract[m]) > 0" class="flex justify-between items-center p-4 rounded-2xl bg-white/5 hover:bg-white/[0.08] transition-all group">
                                 <div class="flex items-center">
                                     <div class="w-2 h-2 rounded-full bg-sky-500 mr-4 group-hover:scale-150 transition-transform"></div>
                                     <span class="text-sm font-bold text-slate-300 uppercase" x-text="m"></span>
                                 </div>
-                                <span class="text-sm font-bold text-white font-mono" x-text="formatCurrency(parseNumber(selectedContract?.[m]))"></span>
+                                <span class="text-sm font-bold text-white font-mono" x-text="formatCurrency(parseNumber(selectedContract[m]))"></span>
                             </div>
                         </template>
                     </div>
@@ -485,7 +475,7 @@
                                     <p class="text-[10px] text-slate-500 uppercase font-bold truncate max-w-[250px]" x-text="c['ESCOPO']"></p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors" x-text="formatCurrency(c.isNewThisMonth ? parseNumber(c['VALOR DO CONTRATO']) : 0)"></p>
+                                    <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors" x-text="formatCurrency(parseNumber(c['VALOR DO CONTRATO']))"></p>
                                     <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Valor do Contrato</p>
                                 </div>
                             </div>
@@ -497,7 +487,7 @@
                 <div class="p-8 border-t border-white/5 bg-white/[0.02]">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Total do Setor</span>
-                        <span class="text-xl font-black text-sky-400" x-text="formatCurrency(contracts.filter(x => x['SETOR'] === selectedSectorForModal).reduce((acc, x) => acc + (x.isNewThisMonth ? parseNumber(x['VALOR DO CONTRATO']) : 0), 0))"></span>
+                        <span class="text-xl font-black text-sky-400" x-text="formatCurrency(contracts.filter(x => x['SETOR'] === selectedSectorForModal).reduce((acc, x) => acc + parseNumber(x['VALOR DO CONTRATO']), 0))"></span>
                     </div>
                 </div>
             </div>
@@ -525,7 +515,6 @@
                     selectedClosingCC: null,
                     selectedSectorForModal: null,
                     showSCurveValues: true,
-                    isAccumulated: true,
                     sectorTotal: 0,
                     timelineIndex: 0,
                     visibleMonthCount: 6,
@@ -538,19 +527,7 @@
                         this.resetTimeline();
                         
                         this.$watch('showSCurveValues', () => this.updateCharts());
-                        this.$watch('isAccumulated', () => {
-                            this.resetTimeline();
-                            this.updateCharts();
-                        });
-                        this.$watch('filters', () => {
-                            if (this.filters.month !== 'all') {
-                                const idx = this.monthColumns.indexOf(this.filters.month);
-                                if (idx !== -1) {
-                                    this.timelineIndex = Math.max(0, idx - this.visibleMonthCount + 1);
-                                }
-                            }
-                            this.updateCharts();
-                        });
+                        this.$watch('filters', () => this.updateCharts());
                         this.$watch('timelineIndex', () => this.updateCharts());
                         this.$watch('currentView', () => {
                             this.filters.costCenter = 'all';
@@ -579,22 +556,6 @@
                             // Definir a visualização para focar no último mês válido
                             this.timelineIndex = Math.max(0, lastValidIndex - this.visibleMonthCount + 1);
                         }
-                    },
-
-                    parseDateStr(dateStr) {
-                        if (!dateStr) return null;
-                        
-                        const dashMatch = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
-                        if (dashMatch) return `${dashMatch[1]}-${dashMatch[2]}-${dashMatch[3]}`;
-                        
-                        const slashMatch = String(dateStr).match(/^(\d{2})\/(\d{2})\/(\d{2,4})/);
-                        if (slashMatch) {
-                            let [, day, month, year] = slashMatch;
-                            if (year.length === 2) year = '20' + year;
-                            return `${year}-${month}-${day}`;
-                        }
-                        
-                        return String(dateStr);
                     },
 
                     parseNumber(val) {
@@ -715,92 +676,7 @@
                         if (this.currentView !== 'overview') filtered = filtered.filter(c => c['OBRA']?.toString().toUpperCase() === this.currentView);
                         if (this.filters.sector !== 'all') filtered = filtered.filter(c => c['SETOR'] === this.filters.sector);
                         if (this.filters.costCenter !== 'all') filtered = filtered.filter(c => c['CENTRO DE CUSTO'] === this.filters.costCenter);
-                        
-                        const monthsMap = {'JAN':'01', 'FEV':'02', 'MAR':'03', 'ABR':'04', 'MAI':'05', 'JUN':'06', 'JUL':'07', 'AGO':'08', 'SET':'09', 'OUT':'10', 'NOV':'11', 'DEZ':'12'};
-                        
-                        // Determinar limites de filtro de data e se deve somar (Acumulado) ou pegar pontual
-                        let filterMonthIndex = -1;
-                        let shouldFilterByDate = false;
-                        let monthStart, monthEnd;
-
-                        if (this.filters.month !== 'all') {
-                            shouldFilterByDate = true;
-                            filterMonthIndex = this.monthColumns.indexOf(this.filters.month);
-                            const parts = this.filters.month.split('/');
-                            if (parts.length === 2 && monthsMap[parts[0].toUpperCase()]) {
-                                const year = '20' + parts[1];
-                                const monthNum = monthsMap[parts[0].toUpperCase()];
-                                const daysInMonth = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
-                                monthStart = `${year}-${monthNum}-01`;
-                                monthEnd = `${year}-${monthNum}-${daysInMonth}`;
-                            }
-                        }
-
-                        return filtered.map(originalContract => {
-                            const parseD = this.parseDateStr.bind(this);
-                            const dInicio = parseD(originalContract['INICIO_CONTRATO']);
-                            const dFim = parseD(originalContract['TERMINO_CONTRATO']);
-
-                            // Criar cópia rasa para não afetar o dataset original ao alterar valores para tabela
-                            const c = { ...originalContract };
-                            
-                            // Recalcular MEDIDO dinamicamente
-                            let tempMedido = 0;
-                            let baseAcumuladoAteMes = 0;
-
-                            if (this.filters.month === 'all') {
-                                tempMedido = this.parseNumber(c['VALOR MEDIDO']); 
-                                baseAcumuladoAteMes = tempMedido;
-                            } else {
-                                // A Regra B: A coluna de mês do Excel já provê a Medição Isolada líquida do mês
-                                const medicaoIsolada = this.parseNumber(c[this.filters.month]);
-                                
-                                // O Acumulado é o somatório histórico de todas as colunas até o mês selecionado
-                                const colsToSum = this.monthColumns.slice(0, filterMonthIndex + 1);
-                                baseAcumuladoAteMes = colsToSum.reduce((acc, col) => acc + this.parseNumber(c[col]), 0);
-                                
-                                if (this.isAccumulated) {
-                                    tempMedido = baseAcumuladoAteMes;
-                                } else {
-                                    tempMedido = medicaoIsolada;
-                                }
-                            }
-                            
-                            // Filtros de Data
-                            if (shouldFilterByDate && monthStart && monthEnd) {
-                                if (this.isAccumulated) {
-                                    // No modo acumulado, mostramos contratos ativos no período OU que tiveram medição residual neste mês
-                                    const isActive = (!dInicio || dInicio <= monthEnd) && (!dFim || dFim >= monthStart);
-                                    const hasMedicaoNesteMes = this.parseNumber(c[this.filters.month]) > 0;
-                                    if (!isActive && !hasMedicaoNesteMes) {
-                                        return null;
-                                    }
-                                } else {
-                                    // No modo isolado, mostramos APENAS quem teve produção no mês, 
-                                    // OU quem não teve produção mas acabou de assinar o contrato neste mês.
-                                    if (tempMedido <= 0) {
-                                        const didStartThisMonth = dInicio && (dInicio >= monthStart && dInicio <= monthEnd);
-                                        if (!didStartThisMonth) {
-                                            return null;
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            c['VALOR MEDIDO'] = tempMedido;
-                            c['MEDIDO'] = tempMedido; // Helper property
-                            // Saldo e progresso SEMPRE baseados no Acumulado do mês para estabilidade financeira
-                            c['SALDO'] = this.parseNumber(c['VALOR DO CONTRATO']) - baseAcumuladoAteMes;
-                            c['PROGRESSO'] = (this.parseNumber(c['VALOR DO CONTRATO']) > 0) ? (baseAcumuladoAteMes / this.parseNumber(c['VALOR DO CONTRATO'])) * 100 : 0;
-                            
-                            c.isNewThisMonth = true;
-                            if (shouldFilterByDate && monthStart && monthEnd && !this.isAccumulated) {
-                                const didStartThisMonth = dInicio && (dInicio >= monthStart && dInicio <= monthEnd);
-                                c.isNewThisMonth = !!didStartThisMonth;
-                            }
-                            
-                            return c;
-                        }).filter(Boolean);
+                        return filtered;
                     },
 
                     get filteredContracts() {
@@ -869,10 +745,9 @@
 
                         // Calcular valores atuais
                         if (this.filters.month !== 'all') {
-                            total = contracts.reduce((acc, c) => acc + (c.isNewThisMonth ? this.parseNumber(c['VALOR DO CONTRATO']) : 0), 0);
-                            // Agora MEDIDO já vem pré-processado pela propriedade 'contracts' (dinamicamente acumulado ou pontual)
-                            medido = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR MEDIDO'])), 0);
-                            saldo = contracts.reduce((acc, c) => acc + (this.parseNumber(c['SALDO'])), 0);
+                            total = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
+                            medido = contracts.reduce((acc, c) => acc + (this.parseNumber(c[this.filters.month])), 0);
+                            saldo = total - medido;
                         } else {
                             total = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
                             medido = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR MEDIDO'])), 0);
@@ -881,35 +756,21 @@
 
                         // Calcular Tendências (Trends)
                         if (currentMonth && currentMonth !== 'all') {
-                            const currentValTotal = total;
-                            let currentValMedido = medido;
-                            const currentValSaldo = saldo;
+                            const currentValTotal = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
+                            const currentValMedido = contracts.reduce((acc, c) => acc + (this.parseNumber(c[currentMonth])), 0);
+                            const currentValSaldo = currentValTotal - currentValMedido;
 
                             if (prevMonth) {
-                                const prevValTotal = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
-                                
-                                let prevValMedido = 0;
-                                if (this.isAccumulated) {
-                                    const prevIdx = this.monthColumns.indexOf(prevMonth);
-                                    const colsToSum = this.monthColumns.slice(0, prevIdx + 1);
-                                    prevValMedido = contracts.reduce((acc, c) => acc + colsToSum.reduce((sum, col) => sum + this.parseNumber(c[col]), 0), 0);
-                                } else {
-                                    prevValMedido = contracts.reduce((acc, c) => acc + (this.parseNumber(c[prevMonth])), 0);
-                                }
-                                
-                                let prevValAcumulado = 0;
-                                const prevIdx2 = this.monthColumns.indexOf(prevMonth);
-                                const colsToSum2 = this.monthColumns.slice(0, prevIdx2 + 1);
-                                prevValAcumulado = contracts.reduce((acc, c) => acc + colsToSum2.reduce((sum, col) => sum + this.parseNumber(c[col]), 0), 0);
-                                
-                                const prevValSaldo = prevValTotal - prevValAcumulado;
+                                const prevValTotal = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0); // Geralmente estável
+                                const prevValMedido = contracts.reduce((acc, c) => acc + (this.parseNumber(c[prevMonth])), 0);
+                                const prevValSaldo = prevValTotal - prevValMedido;
 
                                 const calcTrend = (cur, prev) => {
                                     if (prev === 0) return cur > 0 ? 100 : 0;
                                     return ((cur - prev) / prev) * 100;
                                 };
 
-                                trendTotal = 0; 
+                                trendTotal = 0; // Contratos totais raramente flutuam mês a mês de forma a precisar de trend aqui, mas pode habilitar se desejar
                                 trendMedido = calcTrend(currentValMedido, prevValMedido);
                                 trendSaldo = calcTrend(currentValSaldo, prevValSaldo);
                             }
@@ -917,15 +778,14 @@
 
                         return [
                             { label: 'Valor Total Contratado', value: total, trend: trendTotal.toFixed(1), icon: 'M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3z M2 17l10 5 10-5M2 12l10 5 10-5M2 7l10 5 10-5' },
-                            { label: (this.isAccumulated || this.filters.month === 'all') ? 'Acumulado Medido' : 'Medido no Mês', value: medido, trend: trendMedido.toFixed(1), icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+                            { label: 'Acumulado Medido', value: medido, trend: trendMedido.toFixed(1), icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
                             { label: 'Saldo de Contratos', value: saldo, trend: trendSaldo.toFixed(1), icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' }
                         ];
                     },
 
                     get monthlyClosingData() {
                         const contracts = this.contracts;
-                        let months = this.monthColumns;
-                        
+                        const months = this.monthColumns;
                         let cumulative = 0;
                         const closing = [];
 
@@ -975,15 +835,9 @@
                         const closingCanvas = document.getElementById('closingSummaryChart');
                         
                         const months = this.visibleMonths;
+                        const activeContracts = this.contracts;
                         
-                        // Utilizar a base de dados pura para os gráficos, apenas com filtros geográficos/setoriais. 
-                        // Isso é necessário porque `this.contracts` destrói dados temporais ao simular Mês Fechado (Modo Mensal).
-                        let chartContracts = this.data || [];
-                        if (this.currentView !== 'overview') chartContracts = chartContracts.filter(c => c['OBRA']?.toString().toUpperCase() === this.currentView);
-                        if (this.filters.sector !== 'all') chartContracts = chartContracts.filter(c => c['SETOR'] === this.filters.sector);
-                        if (this.filters.costCenter !== 'all') chartContracts = chartContracts.filter(c => c['CENTRO DE CUSTO'] === this.filters.costCenter);
-                        
-                        if (!months || months.length === 0 || !chartContracts || chartContracts.length === 0) return;
+                        if (!months || months.length === 0 || !activeContracts || activeContracts.length === 0) return;
                         
                         if (chartInstances.trend) chartInstances.trend.destroy();
                         if (chartInstances.scurve) chartInstances.scurve.destroy();
@@ -991,9 +845,7 @@
                         if (chartInstances.closing) chartInstances.closing.destroy();
                         
                         // 3. Preparação do Gráfico de Evolução (Real vs Prev por CC)
-                        
-                        // 3. Preparação do Gráfico de Evolução (Real vs Prev por CC)
-                        if (!months || months.length === 0 || !chartContracts || chartContracts.length === 0) return;
+                        if (!months || months.length === 0 || !activeContracts || activeContracts.length === 0) return;
 
                         let actPrevisto = this.previstoData || [];
                         if (this.currentView !== 'overview') actPrevisto = actPrevisto.filter(c => c['OBRA']?.toString().toUpperCase() === this.currentView);
@@ -1004,7 +856,7 @@
                         const realCcMap = {};
                         const prevCcMap = {};
                         
-                        chartContracts.forEach(c => {
+                        activeContracts.forEach(c => {
                             const cc = c['CENTRO DE CUSTO'];
                             if (!cc) return;
                             if (!realCcMap[cc]) realCcMap[cc] = {};
@@ -1035,11 +887,8 @@
                         const trendChartMapping = []; // Mapeamento para clique (Novo)
                         const basePalette = ['#38bdf8', '#fb923c', '#4ade80', '#f472b6', '#a78bfa', '#94a3b8', '#facc15', '#2dd4bf', '#a3e635', '#f87171', '#c084fc', '#818cf8'];
 
-                        // Descobrir limite do Mês de Referência
-                        const allMonthsIdxRef = this.filters.month !== 'all' ? this.monthColumns.indexOf(this.filters.month) : Infinity;
-
                         months.forEach((m, mIdx) => {
-                            const monthTotal = chartContracts.reduce((acc, c) => acc + (this.parseNumber(c[m])), 0);
+                            const monthTotal = activeContracts.reduce((acc, c) => acc + (this.parseNumber(c[m])), 0);
                             
                             // Encontrar o mês anterior real nos dados consolidados, se houver
                             const allMonthsIdx = this.monthColumns.indexOf(m);
@@ -1051,24 +900,10 @@
                                 trendLabels.push(ccName);
                                 trendChartMapping.push({ month: m, cc: cc }); // Salvar metadados
                                 
-                                const isFutureMatch = allMonthsIdx > allMonthsIdxRef;
                                 const val = realCcMap[cc][m] || 0;
+// ... (resto do loop permanece igual, vou substituir o bloco inteiro para garantir consistência)
                                 trendDataReal.push(val);
-                                
-                                // Regra de cor baseada no Modo Acumulado e no Filtro de Mês
-                                if (this.isAccumulated) {
-                                    if (isFutureMatch) {
-                                        bgColors.push('rgba(148, 163, 184, 0.2)'); // slate-400 com 20% opacity
-                                    } else {
-                                        bgColors.push(basePalette[idx % basePalette.length]);
-                                    }
-                                } else {
-                                    if (allMonthsIdxRef !== Infinity && allMonthsIdx === allMonthsIdxRef) {
-                                        bgColors.push(basePalette[idx % basePalette.length]);
-                                    } else {
-                                        bgColors.push('rgba(148, 163, 184, 0.2)');
-                                    }
-                                }
+                                bgColors.push(basePalette[idx % basePalette.length]);
                                 
                                 let trendCC = "";
                                 if (prevMonthStr) {
@@ -1090,7 +925,7 @@
                                 trendDataPercentages.push(labelsArr);
                                 
                                 if (idx === Math.floor(topCCs.length / 2)) {
-                                    const mTotal = chartContracts.reduce((acc, c) => acc + (this.parseNumber(c[m])), 0);
+                                    const mTotal = activeContracts.reduce((acc, c) => acc + (this.parseNumber(c[m])), 0);
                                     const formattedMTotal = mTotal >= 1000000 
                                         ? (mTotal/1000000).toFixed(1) + 'M' 
                                         : (mTotal/1000).toFixed(0) + 'k';
@@ -1153,16 +988,7 @@
                                             anchor: 'end',
                                             align: 'top',
                                             offset: 2,
-                                            color: (context) => {
-                                                const meta = trendChartMapping[context.dataIndex];
-                                                if (meta) {
-                                                    const mIdx = this.monthColumns.indexOf(meta.month);
-                                                    if (this.isAccumulated) {
-                                                        if (mIdx > allMonthsIdxRef) return 'rgba(148, 163, 184, 0.4)'; // apagado se no futuro
-                                                    } else {
-                                                        if (allMonthsIdxRef !== Infinity && mIdx !== allMonthsIdxRef) return 'rgba(148, 163, 184, 0.4)'; // apagado se não for o escolhido
-                                                    }
-                                                }
+                                            color: function(context) {
                                                 const labels = trendDataPercentages[context.dataIndex] || [];
                                                 const trendLine = labels[0]; // A tendência é sempre o primeiro item agora
                                                 if (trendLine && typeof trendLine === 'string') {
@@ -1224,12 +1050,10 @@
                             const startIndex = this.monthColumns.indexOf(months[0]);
                             
                             // Somar backlog antes do período visível se houver
-                            if (this.isAccumulated || this.filters.month === 'all') {
-                                for (let i = 0; i < startIndex; i++) {
-                                    const minM = this.monthColumns[i];
-                                    cumPrevTotal += actPrevisto.reduce((acc, c) => acc + (this.parseNumber(c[minM])), 0);
-                                    cumRealTotal += chartContracts.reduce((acc, c) => acc + (this.parseNumber(c[minM])), 0);
-                                }
+                            for (let i = 0; i < startIndex; i++) {
+                                const minM = this.monthColumns[i];
+                                cumPrevTotal += actPrevisto.reduce((acc, c) => acc + (this.parseNumber(c[minM])), 0);
+                                cumRealTotal += activeContracts.reduce((acc, c) => acc + (this.parseNumber(c[minM])), 0);
                             }
 
                             const dataPrev = [];
@@ -1237,26 +1061,14 @@
                             const sCurveVariations = [];
 
                             months.forEach(m => {
-                                const prevM = actPrevisto.reduce((acc, c) => acc + (this.parseNumber(c[m])), 0);
-                                const realM = chartContracts.reduce((acc, c) => acc + (this.parseNumber(c[m])), 0);
-                                
-                                cumPrevTotal += prevM;
-                                cumRealTotal += realM;
-
-                                if (this.isAccumulated || this.filters.month === 'all') {
-                                    dataPrev.push(cumPrevTotal);
-                                    dataReal.push(cumRealTotal);
-                                } else {
-                                    dataPrev.push(prevM);
-                                    dataReal.push(realM);
-                                }
+                                cumPrevTotal += actPrevisto.reduce((acc, c) => acc + (this.parseNumber(c[m])), 0);
+                                cumRealTotal += activeContracts.reduce((acc, c) => acc + (this.parseNumber(c[m])), 0);
+                                dataPrev.push(cumPrevTotal);
+                                dataReal.push(cumRealTotal);
                                 
                                 // Calcular desvio vs planejado
-                                const refPrev = this.isAccumulated || this.filters.month === 'all' ? cumPrevTotal : prevM;
-                                const refReal = this.isAccumulated || this.filters.month === 'all' ? cumRealTotal : realM;
-                                
-                                if (refPrev > 0) {
-                                    sCurveVariations.push(((refReal - refPrev) / refPrev) * 100);
+                                if (cumPrevTotal > 0) {
+                                    sCurveVariations.push(((cumRealTotal - cumPrevTotal) / cumPrevTotal) * 100);
                                 } else {
                                     sCurveVariations.push(0);
                                 }
@@ -1268,7 +1080,7 @@
                                     labels: months,
                                     datasets: [
                                         {
-                                            label: (this.isAccumulated || this.filters.month === 'all') ? 'Previsto Acumulado' : 'Previsto no Mês',
+                                            label: 'Previsto Acumulado',
                                             data: dataPrev,
                                             borderColor: '#94a3b8',
                                             backgroundColor: 'rgba(148, 163, 184, 0.1)',
@@ -1291,72 +1103,20 @@
                                             }
                                         },
                                         {
-                                            label: (this.isAccumulated || this.filters.month === 'all') ? 'Realizado Acumulado' : 'Realizado no Mês',
+                                            label: 'Realizado Acumulado',
                                             data: dataReal,
-                                            // Se segment for após o limite do mês de referência, deixar a linha apagada
-                                            segment: {
-                                                borderColor: ctx => {
-                                                    const m = months[ctx.p1DataIndex];
-                                                    const idx = this.monthColumns.indexOf(m);
-                                                    if (this.isAccumulated) {
-                                                        return (idx > allMonthsIdxRef) ? 'rgba(148, 163, 184, 0.3)' : '#38bdf8';
-                                                    } else {
-                                                        return (idx === allMonthsIdxRef) ? '#38bdf8' : 'rgba(148, 163, 184, 0.3)';
-                                                    }
-                                                },
-                                                backgroundColor: ctx => {
-                                                    const m = months[ctx.p1DataIndex];
-                                                    const idx = this.monthColumns.indexOf(m);
-                                                    if (this.isAccumulated) {
-                                                        return (idx > allMonthsIdxRef) ? 'rgba(148, 163, 184, 0.05)' : 'rgba(56, 189, 248, 0.1)';
-                                                    } else {
-                                                        return (idx === allMonthsIdxRef) ? 'rgba(56, 189, 248, 0.1)' : 'rgba(148, 163, 184, 0.05)';
-                                                    }
-                                                }
-                                            },
+                                            borderColor: '#38bdf8',
+                                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
                                             fill: true,
                                             tension: 0.4,
-                                            pointBackgroundColor: (context) => {
-                                                const m = months[context.dataIndex];
-                                                const idx = this.monthColumns.indexOf(m);
-                                                if (this.isAccumulated) {
-                                                    return (idx > allMonthsIdxRef) ? 'rgba(148, 163, 184, 0.3)' : '#0ea5e9';
-                                                } else {
-                                                    return (allMonthsIdxRef !== Infinity && idx === allMonthsIdxRef) ? '#0ea5e9' : 'rgba(148, 163, 184, 0.3)';
-                                                }
-                                            },
-                                            pointBorderColor: (context) => {
-                                                const m = months[context.dataIndex];
-                                                const idx = this.monthColumns.indexOf(m);
-                                                if (this.isAccumulated) {
-                                                    return (idx > allMonthsIdxRef) ? 'rgba(148, 163, 184, 0)' : '#fff';
-                                                } else {
-                                                    return (allMonthsIdxRef !== Infinity && idx === allMonthsIdxRef) ? '#fff' : 'rgba(148, 163, 184, 0)';
-                                                }
-                                            },
+                                            pointBackgroundColor: '#0ea5e9',
                                             pointRadius: 4,
                                             datalabels: {
-                                                display: (context) => {
-                                                    if (!this.showSCurveValues || dataReal[context.dataIndex] <= 0) return false;
-                                                    if (!this.isAccumulated && allMonthsIdxRef !== Infinity) {
-                                                        const m = months[context.dataIndex];
-                                                        const idx = this.monthColumns.indexOf(m);
-                                                        return idx === allMonthsIdxRef; // No modo não-acumulado, exibir label apenas no mês atual
-                                                    }
-                                                    return true;
-                                                },
+                                                display: (context) => this.showSCurveValues && dataReal[context.dataIndex] > 0,
                                                 anchor: 'end',
                                                 align: 'top',
                                                 offset: 8,
-                                                color: (context) => {
-                                                    const m = months[context.dataIndex];
-                                                    const idx = this.monthColumns.indexOf(m);
-                                                    if (this.isAccumulated) {
-                                                        if (idx > allMonthsIdxRef) return 'rgba(148, 163, 184, 0.4)'; // Apagado
-                                                    } else {
-                                                        if (allMonthsIdxRef !== Infinity && idx !== allMonthsIdxRef) return 'rgba(148, 163, 184, 0.4)'; // Apagado
-                                                    }
-                                                    
+                                                color: function(context) {
                                                     const val = sCurveVariations[context.dataIndex];
                                                     return val >= 0 ? '#4ade80' : '#f87171';
                                                 },
@@ -1400,17 +1160,11 @@
                         // 7. Curva ABC (Setores)
                         if (abcCanvas) {
                             const sectorMap = {};
-                            // Usa this.contracts para herdar as regras de acumulado (excluindo contratos ignorados no mês específico)
-                            const displayContracts = this.contracts;
-                            
-                            displayContracts.forEach(c => {
+                            activeContracts.forEach(c => {
                                 // Limpar espaços do setor para agrupar corretamente
                                 let sector = c['SETOR'] || 'NÃO INFORMADO';
                                 if (typeof sector === 'string') sector = sector.trim();
-                                
-                                // Se for 'Apenas Mês Solicitado' (!isAccumulated), mapeamos o VALOR MEDIDO filtrado daquele mes ou o total do contrato?
-                                // Como a métrica é "Valor do Contrato", usamos a key original ou calculada que determina o peso do contrato validado
-                                sectorMap[sector] = (sectorMap[sector] || 0) + (c.isNewThisMonth ? this.parseNumber(c['VALOR DO CONTRATO']) : 0);
+                                sectorMap[sector] = (sectorMap[sector] || 0) + (this.parseNumber(c['VALOR DO CONTRATO']));
                             });
                             
                             // Todos os setores ordenados do maior para o menor
@@ -1507,13 +1261,7 @@
                                     datasets: [{
                                         label: 'Total Medido',
                                         data: closingData.map(d => d.value),
-                                        backgroundColor: closingData.map((d, index) => {
-                                            if (this.isAccumulated) {
-                                                return (index > allMonthsIdxRef) ? 'rgba(148, 163, 184, 0.2)' : '#38bdf8';
-                                            } else {
-                                                return (allMonthsIdxRef !== Infinity && index === allMonthsIdxRef) ? '#38bdf8' : 'rgba(148, 163, 184, 0.2)';
-                                            }
-                                        }),
+                                        backgroundColor: '#38bdf8',
                                         borderRadius: 8,
                                         barPercentage: 0.6
                                     }]
@@ -1543,13 +1291,8 @@
                                             },
                                             color: (context) => {
                                                 const idx = context.dataIndex;
-                                                const trend = closingData[idx]?.trend || 0;
-                                                if (this.isAccumulated) {
-                                                    if (idx > allMonthsIdxRef) return 'rgba(148, 163, 184, 0.4)';
-                                                } else {
-                                                    if (allMonthsIdxRef !== Infinity && idx !== allMonthsIdxRef) return 'rgba(148, 163, 184, 0.4)';
-                                                }
                                                 if (idx === 0) return '#94a3b8';
+                                                const trend = closingData[idx]?.trend || 0;
                                                 return trend >= 0 ? '#4ade80' : '#f87171';
                                             },
                                             font: { size: 9, weight: 'bold' },
