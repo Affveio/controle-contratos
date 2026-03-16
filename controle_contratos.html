@@ -427,12 +427,12 @@
                     <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Histórico de Medições Mensais</h4>
                     <div class="space-y-3">
                         <template x-for="m in monthColumns" :key="m">
-                            <div x-show="selectedContract && parseNumber(selectedContract[m]) > 0" class="flex justify-between items-center p-4 rounded-2xl bg-white/5 hover:bg-white/[0.08] transition-all group">
+                            <div x-show="selectedContract && parseNumber(selectedContract?.[m]) > 0" class="flex justify-between items-center p-4 rounded-2xl bg-white/5 hover:bg-white/[0.08] transition-all group">
                                 <div class="flex items-center">
                                     <div class="w-2 h-2 rounded-full bg-sky-500 mr-4 group-hover:scale-150 transition-transform"></div>
                                     <span class="text-sm font-bold text-slate-300 uppercase" x-text="m"></span>
                                 </div>
-                                <span class="text-sm font-bold text-white font-mono" x-text="formatCurrency(parseNumber(selectedContract[m]))"></span>
+                                <span class="text-sm font-bold text-white font-mono" x-text="formatCurrency(parseNumber(selectedContract?.[m]))"></span>
                             </div>
                         </template>
                     </div>
@@ -581,6 +581,22 @@
                         }
                     },
 
+                    parseDateStr(dateStr) {
+                        if (!dateStr) return null;
+                        
+                        const dashMatch = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+                        if (dashMatch) return `${dashMatch[1]}-${dashMatch[2]}-${dashMatch[3]}`;
+                        
+                        const slashMatch = String(dateStr).match(/^(\d{2})\/(\d{2})\/(\d{2,4})/);
+                        if (slashMatch) {
+                            let [, day, month, year] = slashMatch;
+                            if (year.length === 2) year = '20' + year;
+                            return `${year}-${month}-${day}`;
+                        }
+                        
+                        return String(dateStr);
+                    },
+
                     parseNumber(val) {
                         if (typeof val === 'number') return isNaN(val) ? 0 : val;
                         if (!val || val === '-' || val === ' ') return 0;
@@ -722,21 +738,14 @@
 
                         return filtered.map(originalContract => {
                             let valid = true;
+                            const parseD = this.parseDateStr.bind(this);
+                            const dInicio = parseD(originalContract['INICIO_CONTRATO']);
+                            const dFim = parseD(originalContract['TERMINO_CONTRATO']);
+                            
                             if (shouldFilterByDate && monthEnd && monthStart) {
-                                if (this.isAccumulated) {
-                                    // Ativos no mês (mesmo que iniciados antes)
-                                    if (originalContract['INICIO_CONTRATO'] && originalContract['INICIO_CONTRATO'] > monthEnd) valid = false;
-                                    if (originalContract['TERMINO_CONTRATO'] && originalContract['TERMINO_CONTRATO'] < monthStart) valid = false;
-                                } else {
-                                    // Apenas iniciados no próprio mês
-                                    if (originalContract['INICIO_CONTRATO']) {
-                                        if (originalContract['INICIO_CONTRATO'] < monthStart || originalContract['INICIO_CONTRATO'] > monthEnd) {
-                                            valid = false;
-                                        }
-                                    } else {
-                                        valid = false; // Se não tem data de início, não assume que iniciou no mês em modo isolado
-                                    }
-                                }
+                                // Para ambos os modos, o contrato precisa estar ATIVO no período
+                                if (dInicio && dInicio > monthEnd) valid = false;
+                                if (dFim && dFim < monthStart) valid = false;
                             }
                             if (!valid) return null;
 
@@ -745,24 +754,41 @@
                             
                             // Recalcular MEDIDO dinamicamente
                             let tempMedido = 0;
+                            let baseAcumuladoNoMes = 0;
+
                             if (this.filters.month === 'all') {
-                                tempMedido = this.parseNumber(c['VALOR MEDIDO']); // Valor fixo original do arquivo
+                                tempMedido = this.parseNumber(c['VALOR MEDIDO']); 
+                                baseAcumuladoNoMes = tempMedido;
                             } else {
+                                // O valor na coluna específica JÁ É O ACUMULADO até aquele momento, de acordo com o padrão do Excel original
+                                baseAcumuladoNoMes = this.parseNumber(c[this.filters.month]);
+                                
                                 if (this.isAccumulated) {
-                                    // Soma de todos os meses até o mês filtrado (inclusive backlog antes dos visíveis, se houver, mas assumiremos a soma total contida nas colunas até o indice)
-                                    // Para garantir backlog, usamos o total histórico se estivar além, mas por simplificação das colunas:
-                                    const colsToSum = this.monthColumns.slice(0, filterMonthIndex + 1);
-                                    tempMedido = colsToSum.reduce((acc, currentValidMonth) => acc + this.parseNumber(c[currentValidMonth]), 0);
+                                    tempMedido = baseAcumuladoNoMes;
                                 } else {
-                                    // Valor único daquele mês exato
-                                    tempMedido = this.parseNumber(c[this.filters.month]);
+                                    // A medição isolada exata do mês é (Mês Atual - Mês Anterior)
+                                    let prevM = 0;
+                                    if (filterMonthIndex > 0) {
+                                        const prevMonthStr = this.monthColumns[filterMonthIndex - 1];
+                                        prevM = this.parseNumber(c[prevMonthStr]);
+                                    }
+                                    tempMedido = baseAcumuladoNoMes - prevM;
+                                }
+                            }
+                            
+                            // Filtro estético: Se Isolado(!isAccumulated), oculta linhas sem produção e que não nasceram no mês
+                            if (shouldFilterByDate && !this.isAccumulated) {
+                                const didStartThisMonth = dInicio && (dInicio >= monthStart && dInicio <= monthEnd);
+                                if (tempMedido <= 0 && !didStartThisMonth) {
+                                    return null;
                                 }
                             }
                             
                             c['VALOR MEDIDO'] = tempMedido;
                             c['MEDIDO'] = tempMedido; // Helper property
-                            c['SALDO'] = this.parseNumber(c['VALOR DO CONTRATO']) - tempMedido;
-                            c['PROGRESSO'] = (this.parseNumber(c['VALOR DO CONTRATO']) > 0) ? (tempMedido / this.parseNumber(c['VALOR DO CONTRATO'])) * 100 : 0;
+                            // Saldo e progresso SEMPRE baseados no Acumulado do mês para estabilidade financeira
+                            c['SALDO'] = this.parseNumber(c['VALOR DO CONTRATO']) - baseAcumuladoNoMes;
+                            c['PROGRESSO'] = (this.parseNumber(c['VALOR DO CONTRATO']) > 0) ? (baseAcumuladoNoMes / this.parseNumber(c['VALOR DO CONTRATO'])) * 100 : 0;
                             
                             return c;
                         }).filter(Boolean);
@@ -1353,10 +1379,16 @@
                         // 7. Curva ABC (Setores)
                         if (abcCanvas) {
                             const sectorMap = {};
-                            chartContracts.forEach(c => {
+                            // Usa this.contracts para herdar as regras de acumulado (excluindo contratos ignorados no mês específico)
+                            const displayContracts = this.contracts;
+                            
+                            displayContracts.forEach(c => {
                                 // Limpar espaços do setor para agrupar corretamente
                                 let sector = c['SETOR'] || 'NÃO INFORMADO';
                                 if (typeof sector === 'string') sector = sector.trim();
+                                
+                                // Se for 'Apenas Mês Solicitado' (!isAccumulated), mapeamos o VALOR MEDIDO filtrado daquele mes ou o total do contrato?
+                                // Como a métrica é "Valor do Contrato", usamos a key original ou calculada que determina o peso do contrato validado
                                 sectorMap[sector] = (sectorMap[sector] || 0) + (this.parseNumber(c['VALOR DO CONTRATO']));
                             });
                             
