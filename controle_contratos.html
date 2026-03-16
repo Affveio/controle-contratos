@@ -737,58 +737,61 @@
                         }
 
                         return filtered.map(originalContract => {
-                            let valid = true;
                             const parseD = this.parseDateStr.bind(this);
                             const dInicio = parseD(originalContract['INICIO_CONTRATO']);
                             const dFim = parseD(originalContract['TERMINO_CONTRATO']);
-                            
-                            if (shouldFilterByDate && monthEnd && monthStart) {
-                                // Para ambos os modos, o contrato precisa estar ATIVO no período
-                                if (dInicio && dInicio > monthEnd) valid = false;
-                                if (dFim && dFim < monthStart) valid = false;
-                            }
-                            if (!valid) return null;
 
                             // Criar cópia rasa para não afetar o dataset original ao alterar valores para tabela
                             const c = { ...originalContract };
                             
                             // Recalcular MEDIDO dinamicamente
                             let tempMedido = 0;
-                            let baseAcumuladoNoMes = 0;
+                            let baseAcumuladoAteMes = 0;
 
                             if (this.filters.month === 'all') {
                                 tempMedido = this.parseNumber(c['VALOR MEDIDO']); 
-                                baseAcumuladoNoMes = tempMedido;
+                                baseAcumuladoAteMes = tempMedido;
                             } else {
-                                // O valor na coluna específica JÁ É O ACUMULADO até aquele momento, de acordo com o padrão do Excel original
-                                baseAcumuladoNoMes = this.parseNumber(c[this.filters.month]);
+                                // A Regra B: A coluna de mês do Excel já provê a Medição Isolada líquida do mês
+                                const medicaoIsolada = this.parseNumber(c[this.filters.month]);
+                                
+                                // O Acumulado é o somatório histórico de todas as colunas até o mês selecionado
+                                const colsToSum = this.monthColumns.slice(0, filterMonthIndex + 1);
+                                baseAcumuladoAteMes = colsToSum.reduce((acc, col) => acc + this.parseNumber(c[col]), 0);
                                 
                                 if (this.isAccumulated) {
-                                    tempMedido = baseAcumuladoNoMes;
+                                    tempMedido = baseAcumuladoAteMes;
                                 } else {
-                                    // A medição isolada exata do mês é (Mês Atual - Mês Anterior)
-                                    let prevM = 0;
-                                    if (filterMonthIndex > 0) {
-                                        const prevMonthStr = this.monthColumns[filterMonthIndex - 1];
-                                        prevM = this.parseNumber(c[prevMonthStr]);
-                                    }
-                                    tempMedido = baseAcumuladoNoMes - prevM;
+                                    tempMedido = medicaoIsolada;
                                 }
                             }
                             
-                            // Filtro estético: Se Isolado(!isAccumulated), oculta linhas sem produção e que não nasceram no mês
-                            if (shouldFilterByDate && !this.isAccumulated) {
-                                const didStartThisMonth = dInicio && (dInicio >= monthStart && dInicio <= monthEnd);
-                                if (tempMedido <= 0 && !didStartThisMonth) {
-                                    return null;
+                            // Filtros de Data
+                            if (shouldFilterByDate && monthStart && monthEnd) {
+                                if (this.isAccumulated) {
+                                    // No modo acumulado, mostramos contratos ativos no período OU que tiveram medição residual neste mês
+                                    const isActive = (!dInicio || dInicio <= monthEnd) && (!dFim || dFim >= monthStart);
+                                    const hasMedicaoNesteMes = this.parseNumber(c[this.filters.month]) > 0;
+                                    if (!isActive && !hasMedicaoNesteMes) {
+                                        return null;
+                                    }
+                                } else {
+                                    // No modo isolado, mostramos APENAS quem teve produção no mês, 
+                                    // OU quem não teve produção mas acabou de assinar o contrato neste mês.
+                                    if (tempMedido <= 0) {
+                                        const didStartThisMonth = dInicio && (dInicio >= monthStart && dInicio <= monthEnd);
+                                        if (!didStartThisMonth) {
+                                            return null;
+                                        }
+                                    }
                                 }
                             }
                             
                             c['VALOR MEDIDO'] = tempMedido;
                             c['MEDIDO'] = tempMedido; // Helper property
                             // Saldo e progresso SEMPRE baseados no Acumulado do mês para estabilidade financeira
-                            c['SALDO'] = this.parseNumber(c['VALOR DO CONTRATO']) - baseAcumuladoNoMes;
-                            c['PROGRESSO'] = (this.parseNumber(c['VALOR DO CONTRATO']) > 0) ? (baseAcumuladoNoMes / this.parseNumber(c['VALOR DO CONTRATO'])) * 100 : 0;
+                            c['SALDO'] = this.parseNumber(c['VALOR DO CONTRATO']) - baseAcumuladoAteMes;
+                            c['PROGRESSO'] = (this.parseNumber(c['VALOR DO CONTRATO']) > 0) ? (baseAcumuladoAteMes / this.parseNumber(c['VALOR DO CONTRATO'])) * 100 : 0;
                             
                             return c;
                         }).filter(Boolean);
@@ -863,7 +866,7 @@
                             total = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
                             // Agora MEDIDO já vem pré-processado pela propriedade 'contracts' (dinamicamente acumulado ou pontual)
                             medido = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR MEDIDO'])), 0);
-                            saldo = total - medido;
+                            saldo = contracts.reduce((acc, c) => acc + (this.parseNumber(c['SALDO'])), 0);
                         } else {
                             total = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
                             medido = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR MEDIDO'])), 0);
@@ -872,23 +875,35 @@
 
                         // Calcular Tendências (Trends)
                         if (currentMonth && currentMonth !== 'all') {
-                            const currentValTotal = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
-                            
-                            // currentValMedido é essencialmente o memso que "medido" neste escopo agora
-                            let currentValMedido = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR MEDIDO'])), 0);
-                            const currentValSaldo = currentValTotal - currentValMedido;
+                            const currentValTotal = total;
+                            let currentValMedido = medido;
+                            const currentValSaldo = saldo;
 
                             if (prevMonth) {
-                                const prevValTotal = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0); // Geralmente estável
-                                const prevValMedido = contracts.reduce((acc, c) => acc + (this.parseNumber(c[prevMonth])), 0);
-                                const prevValSaldo = prevValTotal - prevValMedido;
+                                const prevValTotal = contracts.reduce((acc, c) => acc + (this.parseNumber(c['VALOR DO CONTRATO'])), 0);
+                                
+                                let prevValMedido = 0;
+                                if (this.isAccumulated) {
+                                    const prevIdx = this.monthColumns.indexOf(prevMonth);
+                                    const colsToSum = this.monthColumns.slice(0, prevIdx + 1);
+                                    prevValMedido = contracts.reduce((acc, c) => acc + colsToSum.reduce((sum, col) => sum + this.parseNumber(c[col]), 0), 0);
+                                } else {
+                                    prevValMedido = contracts.reduce((acc, c) => acc + (this.parseNumber(c[prevMonth])), 0);
+                                }
+                                
+                                let prevValAcumulado = 0;
+                                const prevIdx2 = this.monthColumns.indexOf(prevMonth);
+                                const colsToSum2 = this.monthColumns.slice(0, prevIdx2 + 1);
+                                prevValAcumulado = contracts.reduce((acc, c) => acc + colsToSum2.reduce((sum, col) => sum + this.parseNumber(c[col]), 0), 0);
+                                
+                                const prevValSaldo = prevValTotal - prevValAcumulado;
 
                                 const calcTrend = (cur, prev) => {
                                     if (prev === 0) return cur > 0 ? 100 : 0;
                                     return ((cur - prev) / prev) * 100;
                                 };
 
-                                trendTotal = 0; // Contratos totais raramente flutuam mês a mês de forma a precisar de trend aqui, mas pode habilitar se desejar
+                                trendTotal = 0; 
                                 trendMedido = calcTrend(currentValMedido, prevValMedido);
                                 trendSaldo = calcTrend(currentValSaldo, prevValSaldo);
                             }
