@@ -1,0 +1,12 @@
+*.xlsx
+*.zip
+*.json
+temp_*
+index_backup.html
+test_chart.js
+restored_backup/
+__pycache__/
+.vscode/
+.idea/
+
+Atualizar_Dashboard.bat

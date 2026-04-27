@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Contratos Premium - Aterpa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script>Chart.register(ChartDataLabels);</script>
+    <script src="data.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .card-gradient { background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); }
+        .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        [x-cloak] { display: none !important; }
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        .btn-nav { @apply p-2 rounded-xl glass hover:bg-white/10 transition-all disabled:opacity-30; }
+    </style>
+</head>
+<body x-data="contractDashboard()" x-cloak>
+    
+    <main class="p-4 md:p-8 lg:p-10 min-h-screen">
+        
+        <!-- Header -->
+        <header class="flex flex-col lg:flex-row justify-between items-center mb-10 gap-6">
+            <div class="flex items-center gap-8">
+                <div class="pr-8 border-r border-white/10 hidden sm:block">
+                    <img src="logo_aterpa.png" alt="Aterpa Logo" class="h-16 lg:h-20 object-contain drop-shadow-2xl" />
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white tracking-tight" x-text="viewTitle"></h1>
+                    <p class="text-slate-400 font-medium">Controle de Contratos A369 e A375</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-4 w-full lg:w-auto">
+                <nav class="flex glass p-1 rounded-2xl border border-white/5">
+                    <a href="index.html" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all uppercase tracking-widest">Portal</a>
+                    <button @click="currentView = 'overview'" :class="currentView === 'overview' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white'" class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 uppercase tracking-widest">Resumo Geral</button>
+                    <button @click="currentView = 'A369'" :class="currentView === 'A369' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-widest">A369</button>
+                    <button @click="currentView = 'A375'" :class="currentView === 'A375' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-widest">A375</button>
+                </nav>
+                <a href="equipamentos.html" class="glass px-6 py-3 rounded-2xl text-xs font-bold text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 uppercase tracking-widest">Painel de Equipamentos →</a>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <template x-for="kpi in kpis" :key="kpi.label">
+                <div class="glass p-8 rounded-[2.5rem] card-gradient animate-fade-in relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="p-4 rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/20 group-hover:scale-110 transition-transform duration-500">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="kpi.icon"></path></svg>
+                        </div>
+                        <div x-show="kpi.trend !== '0.0'" :class="kpi.trend >= 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/20 text-rose-400 border-rose-500/20'" class="px-4 py-1.5 rounded-full text-[11px] font-black border">
+                           <span x-text="(kpi.trend >= 0 ? '▲ ' : '▼ ') + Math.abs(kpi.trend) + '%'"></span>
+                        </div>
+                    </div>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-2" x-text="kpi.label"></p>
+                    <h3 class="text-3xl font-black text-white tracking-tighter" x-text="formatCurrency(kpi.value)"></h3>
+                </div>
+            </template>
+        </div>
+
+        <!-- Fluxo Mensal (Full Width) -->
+        <div class="glass p-8 rounded-[3rem] mb-10 animate-fade-in border-sky-500/10">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-xl font-bold text-white uppercase tracking-tighter">Fluxo Mensal de Medições (Total)</h2>
+                    <p class="text-xs text-slate-500 font-medium">Clique em uma barra para filtrar o mês detalhado na listagem</p>
+                </div>
+                <div class="hidden sm:flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-widest">
+                    <span class="w-2 h-2 rounded bg-sky-500"></span> Realizado Mensal
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="closingSummaryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Middle Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            <!-- Evolução por CC -->
+            <div class="glass p-8 rounded-[3rem] animate-fade-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-xl font-bold text-white uppercase tracking-tighter">Evolução Mensal por Centro de Custo</h2>
+                    <div class="flex gap-2">
+                        <button @click="prevMonthPage()" class="p-2 glass rounded-xl text-slate-400 hover:bg-white/10 disabled:opacity-20" :disabled="timelineIndex === 0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <button @click="nextMonthPage()" class="p-2 glass rounded-xl text-slate-400 hover:bg-white/10 disabled:opacity-20" :disabled="timelineIndex + visibleMonthCount >= monthColumns.length">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Investimento por Setor -->
+            <div class="glass p-8 rounded-[3rem] animate-fade-in">
+                <h2 class="text-xl font-bold text-white uppercase tracking-tighter mb-8">Investimento por Setor (ABC)</h2>
+                <div class="chart-container">
+                    <canvas id="abcChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela -->
+        <section class="glass rounded-[3rem] overflow-hidden border border-white/5 shadow-2xl animate-fade-in">
+            <div class="p-8 border-b border-white/5 flex flex-wrap justify-between items-center gap-6 bg-slate-900/30">
+                <div class="flex items-center gap-6">
+                    <h3 class="text-2xl font-black text-white uppercase tracking-tighter">Listagem de Contratos</h3>
+                    <div class="flex gap-2">
+                         <span class="px-4 py-1.5 bg-sky-500/20 text-sky-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-sky-500/20" x-text="filteredContracts.length + ' Itens'"></span>
+                         <span x-show="filters.month !== 'all'" class="px-4 py-1.5 bg-amber-500/20 text-amber-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-500/20" x-text="'Filtrado: ' + filters.month"></span>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-4">
+                    <select x-model="filters.month" class="bg-slate-800/80 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
+                        <option value="all">TODOS OS MESES (ACUMULADO)</option>
+                        <template x-for="m in monthColumns" :key="m">
+                            <option :value="m" x-text="m"></option>
+                        </template>
+                    </select>
+                    <input type="text" x-model="searchQuery" placeholder="Pesquisar subcontratado ou escopo..." class="w-72 bg-slate-800/80 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-sky-500/40 text-white placeholder-slate-600" />
+                    <button @click="resetFilters()" class="text-[10px] uppercase font-black text-rose-400 hover:text-white transition-colors tracking-widest">Limpar Filtros</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-separate border-spacing-0">
+                    <thead class="bg-slate-900/50 text-[10px] uppercase font-black tracking-[0.15em] text-slate-500">
+                        <tr>
+                            <th class="px-8 py-5 border-b border-white/5">Subcontratado / Escopo</th>
+                            <th class="px-8 py-5 border-b border-white/5 cursor-pointer hover:text-sky-400 transition-colors" @click="toggleSort('setor')">Setor <span x-show="sortBy === 'setor'" x-text="sortDesc ? '▼' : '▲'"></span></th>
+                            <th class="px-8 py-5 border-b border-white/5 text-right cursor-pointer hover:text-sky-400 transition-colors" @click="toggleSort('valor_total')">Contratado <span x-show="sortBy === 'valor_total'" x-text="sortDesc ? '▼' : '▲'"></span></th>
+                            <th class="px-8 py-5 border-b border-white/5 text-right cursor-pointer hover:text-sky-400 transition-colors" @click="toggleSort('medido')">Medido <span x-show="sortBy === 'medido'" x-text="sortDesc ? '▼' : '▲'"></span></th>
+                            <th class="px-8 py-5 border-b border-white/5 text-right cursor-pointer hover:text-sky-400 transition-colors" @click="toggleSort('saldo')">Saldo <span x-show="sortBy === 'saldo'" x-text="sortDesc ? '▼' : '▲'"></span></th>
+                            <th class="px-8 py-5 border-b border-white/5">Progresso</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs divide-y divide-white/5 bg-slate-900/10">
+                        <template x-for="c in filteredContracts" :key="c._uid">
+                            <tr class="hover:bg-sky-500/5 transition-all group">
+                                <td class="px-8 py-6">
+                                    <div class="font-bold text-slate-100 group-hover:text-sky-400 transition-colors text-sm uppercase tracking-tight" x-text="c['SUBCONTRATADO']"></div>
+                                    <div class="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-wider" x-text="c['ESCOPO']"></div>
+                                </td>
+                                <td class="px-8 py-6">
+                                    <span class="px-3 py-1 rounded-lg text-[9px] font-black bg-slate-800 group-hover:bg-slate-700 text-slate-400 uppercase tracking-widest border border-white/5" x-text="c['SETOR']"></span>
+                                </td>
+                                <td class="px-8 py-6 text-right font-mono text-slate-400 text-xs" x-text="formatCurrency(c['VALOR DO CONTRATO'])"></td>
+                                <td class="px-8 py-6 text-right font-mono text-sky-400 font-black text-xs" x-text="formatCurrency(filters.month === 'all' ? c['VALOR MEDIDO'] : parseNumber(c[filters.month]))"></td>
+                                <td class="px-8 py-6 text-right font-mono font-bold text-xs" :class="c['SALDO'] < 0 ? 'text-rose-400' : 'text-emerald-500'" x-text="formatCurrency(c['SALDO'])"></td>
+                                <td class="px-8 py-6">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-1 bg-slate-800 h-2 rounded-full overflow-hidden border border-white/5">
+                                            <div class="bg-gradient-to-r from-sky-600 to-sky-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(56,189,248,0.3)]" :style="'width: ' + Math.min(100, ( (filters.month === 'all' ? c['VALOR MEDIDO'] : parseNumber(c[filters.month])) / c['VALOR DO CONTRATO'] * 100)) + '%'"></div>
+                                        </div>
+                                        <span class="text-[10px] font-black text-slate-500 w-10 text-right" x-text="( ( (filters.month === 'all' ? c['VALOR MEDIDO'] : parseNumber(c[filters.month])) / c['VALOR DO CONTRATO'] * 100).toFixed(1) + '%')"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let chartInstances = {};
+        window.contractDashboard = () => {
+            return {
+                data: [], previstoData: [], lastUpdated: window.LAST_UPDATED || null, currentView: 'overview',
+                filters: { sector: 'all', costCenter: 'all', month: 'all' }, searchQuery: '', sortBy: 'valor_total', sortDesc: true,
+                timelineIndex: 0, visibleMonthCount: 6, monthColumns: [],
+
+                init() {
+                    this.data = window.CONTRACT_DATA || [];
+                    this.previstoData = window.PREVISTO_DATA || [];
+                    this.normalizeData();
+                    this.resetTimeline();
+                    
+                    this.$watch('currentView', () => { this.filters.month = 'all'; this.updateCharts(); });
+                    this.$watch('filters.month', () => this.updateCharts());
+                    this.$watch('timelineIndex', () => this.updateCharts());
+                    
+                    setTimeout(() => this.updateCharts(), 300);
+                },
+
+                normalizeData() {
+                    const monthsBr = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+                    const normalizer = (row, idx) => {
+                        const newRow = {};
+                        Object.keys(row).forEach(key => {
+                            if (!key) return;
+                            const normalizedKey = key.toString().trim().toUpperCase();
+                            const val = row[key];
+                            const isMonth = /^[A-Z]{3}\/\d{2}$/i.test(normalizedKey);
+                            if (isMonth) newRow[normalizedKey] = this.parseNumber(val);
+                            else if (['CENTRO DE CUSTO', 'SETOR', 'OBRA', 'ESCOPO', 'SUBCONTRATADO'].includes(normalizedKey)) newRow[normalizedKey] = val ? val.toString().trim().toUpperCase() : '';
+                            else newRow[normalizedKey] = val;
+                        });
+                        newRow['VALOR DO CONTRATO'] = this.parseNumber(newRow['VALOR DO CONTRATO']);
+                        newRow['VALOR MEDIDO'] = this.parseNumber(newRow['VALOR MEDIDO']);
+                        newRow['SALDO'] = newRow['VALOR DO CONTRATO'] - newRow['VALOR MEDIDO'];
+                        newRow._uid = 'uid_' + idx + '_' + Math.random().toString(36).substr(2, 5);
+                        return newRow;
+                    };
+                    this.data = this.data.map((row, i) => normalizer(row, i));
+                    this.previstoData = this.previstoData.map((row, i) => normalizer(row, i));
+                    this.monthColumns = Object.keys(this.data[0] || {}).filter(k => /^[A-Z]{3}\/\d{2}$/.test(k)).sort((a, b) => {
+                        const [mA, yA] = a.split('/'); const [mB, yB] = b.split('/');
+                        if (yA !== yB) return yA - yB;
+                        return monthsBr.indexOf(mA) - monthsBr.indexOf(mB);
+                    });
+                },
+
+                resetTimeline() {
+                    let lastValid = this.monthColumns.length - 1;
+                    for(let i=this.monthColumns.length-1; i>=0; i--) {
+                        if (this.data.some(c => this.parseNumber(c[this.monthColumns[i]]) > 0)) { lastValid = i; break; }
+                    }
+                    this.timelineIndex = Math.max(0, lastValid - this.visibleMonthCount + 1);
+                },
+
+                parseNumber(val) {
+                    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+                    if (!val || val === '-' || val === ' ') return 0;
+                    let clean = val.toString().replace(/[\sR\$]/g, '');
+                    if (clean.includes(',') && clean.includes('.')) clean = clean.replace(/\./g, '').replace(',', '.');
+                    else if (clean.includes(',')) clean = clean.replace(',', '.');
+                    const num = parseFloat(clean);
+                    return isNaN(num) ? 0 : num;
+                },
+
+                formatCurrency(val) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0); },
+
+                get viewTitle() { return this.currentView === 'overview' ? 'Consolidado Executivo' : 'Obra ' + this.currentView; },
+                get visibleMonths() { return this.monthColumns.slice(this.timelineIndex, this.timelineIndex + this.visibleMonthCount); },
+                prevMonthPage() { if (this.timelineIndex > 0) this.timelineIndex--; },
+                nextMonthPage() { if (this.timelineIndex + this.visibleMonthCount < this.monthColumns.length) this.timelineIndex++; },
+
+                get contracts() {
+                    let filtered = this.data;
+                    if (this.currentView !== 'overview') filtered = filtered.filter(c => c['OBRA']?.toString().toUpperCase() === this.currentView);
+                    return filtered;
+                },
+
+                get filteredContracts() {
+                    let items = this.contracts;
+                    if (this.searchQuery) items = items.filter(c => c['SUBCONTRATADO']?.toLowerCase().includes(this.searchQuery.toLowerCase()) || c['ESCOPO']?.toLowerCase().includes(this.searchQuery.toLowerCase()));
+                    return items.sort((a,b) => {
+                        let valA = a[this.sortBy === 'setor' ? 'SETOR' : (this.sortBy === 'valor_total' ? 'VALOR DO CONTRATO' : 'VALOR MEDIDO')] || 0;
+                        let valB = b[this.sortBy === 'setor' ? 'SETOR' : (this.sortBy === 'valor_total' ? 'VALOR DO CONTRATO' : 'VALOR MEDIDO')] || 0;
+                        if (typeof valA === 'string') return this.sortDesc ? valB.localeCompare(valA) : valA.localeCompare(valB);
+                        return this.sortDesc ? valB - valA : valA - valB;
+                    });
+                },
+
+                get kpis() {
+                    const c = this.contracts;
+                    const tot = c.reduce((acc, x) => acc + (x['VALOR DO CONTRATO']||0), 0);
+                    const med = c.reduce((acc, x) => acc + (x['VALOR MEDIDO']||0), 0);
+                    const sal = tot - med;
+                    
+                    // Calculo de tendencia (comparando ultimo mes com anterior)
+                    let trendMed = 0;
+                    const months = this.monthColumns;
+                    let lastM = null, prevM = null;
+                    for(let i=months.length-1; i>=0; i--) {
+                        if (c.some(x => this.parseNumber(x[months[i]]) > 0)) {
+                            lastM = months[i]; prevM = i > 0 ? months[i-1] : null; break;
+                        }
+                    }
+                    if (lastM && prevM) {
+                        const v1 = c.reduce((a, x) => a + (this.parseNumber(x[lastM])), 0);
+                        const v2 = c.reduce((a, x) => a + (this.parseNumber(x[prevM])), 0);
+                        if (v2 > 0) trendMed = ((v1 - v2) / v2) * 100;
+                    }
+
+                    return [
+                        { label: 'Total Investimento', value: tot, trend: '0.0', icon: 'M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3z M2 17l10 5 10-5M2 12l10 5 10-5M2 7l10 5 10-5' },
+                        { label: 'Realizado Acumulado', value: med, trend: trendMed.toFixed(1), icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+                        { label: 'Saldo Garantido', value: sal, trend: '0.0', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' }
+                    ];
+                },
+
+                get monthlyClosingData() {
+                    let cum = 0;
+                    return this.monthColumns.map((m, i, arr) => {
+                        const val = this.contracts.reduce((a, x) => a + (this.parseNumber(x[m])), 0);
+                        cum += val;
+                        let trend = 0;
+                        if (i > 0) {
+                            const prev = this.contracts.reduce((a, x) => a + (this.parseNumber(x[arr[i-1]])), 0);
+                            if (prev > 0) trend = ((val - prev) / prev) * 100;
+                        }
+                        return { month: m, value: val, cumulative: cum, trend: trend };
+                    });
+                },
+
+                updateCharts() {
+                    const ctxSum = document.getElementById('closingSummaryChart')?.getContext('2d');
+                    if (ctxSum) {
+                        if (chartInstances.closing) chartInstances.closing.destroy();
+                        const items = this.monthlyClosingData;
+                        chartInstances.closing = new Chart(ctxSum, {
+                            type: 'bar',
+                            data: {
+                                labels: items.map(x => x.month),
+                                datasets: [{ label: 'Realizado', data: items.map(x => x.value), backgroundColor: '#38bdf8', borderRadius: 8 }]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    datalabels: {
+                                        anchor: 'end', align: 'top', font: { size: 9, weight: 'bold' },
+                                        formatter: (val, ctx) => {
+                                            const item = items[ctx.dataIndex];
+                                            const trend = item.trend;
+                                            const arrow = trend >= 0 ? '▲' : '▼';
+                                            const pct = Math.abs(trend).toFixed(1) + '%';
+                                            const fmt = val >= 1000000 ? (val/1000000).toFixed(1) + 'M' : (val/1000).toFixed(0) + 'k';
+                                            return ctx.dataIndex > 0 ? [`${arrow}${pct}`, fmt] : fmt;
+                                        },
+                                        color: (ctx) => {
+                                            if (ctx.dataIndex === 0) return '#94a3b8';
+                                            return items[ctx.dataIndex].trend >= 0 ? '#4ade80' : '#f87171';
+                                        },
+                                        textAlign: 'center'
+                                    }
+                                },
+                                onClick: (e, elements) => { if (elements.length > 0) this.filters.month = items[elements[0].index].month; },
+                                scales: {
+                                    y: { display: false, grace: '20%' },
+                                    x: {
+                                        grid: { display: false },
+                                        ticks: {
+                                            color: '#64748b', font: { size: 10, weight: 'bold' },
+                                            callback: function(v, i) {
+                                                const item = items[i];
+                                                const cum = item.cumulative;
+                                                const fmtCum = cum >= 1000000 ? (cum/1000000).toFixed(1) + 'M' : (cum/1000).toFixed(0) + 'k';
+                                                return [item.month, "Acumulado", fmtCum];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    const ctxTrend = document.getElementById('trendChart')?.getContext('2d');
+                    if (ctxTrend) {
+                        if (chartInstances.trend) chartInstances.trend.destroy();
+                        const months = this.visibleMonths;
+                        const contracts = this.contracts;
+                        const realCcMap = {};
+                        contracts.forEach(c => {
+                            const cc = c['CENTRO DE CUSTO']; if (!cc) return;
+                            if (!realCcMap[cc]) realCcMap[cc] = {};
+                            months.forEach(m => realCcMap[cc][m] = (realCcMap[cc][m] || 0) + this.parseNumber(c[m]));
+                        });
+                        const topCCs = Object.keys(realCcMap).map(cc => ({ cc, total: months.reduce((a,m) => a + (realCcMap[cc][m]||0), 0) })).sort((a,b) => b.total - a.total).slice(0, 5).map(x => x.cc);
+                        
+                        const labels = []; const data = []; const bgColors = []; const groupLabels = []; const trendData = [];
+                        const palette = ['#38bdf8', '#fb923c', '#4ade80', '#f472b6', '#a78bfa'];
+                        
+                        months.forEach((m, mIdx) => {
+                            topCCs.forEach((cc, idx) => {
+                                labels.push(cc.length > 10 ? cc.substring(0, 10) + '..' : cc);
+                                const val = realCcMap[cc][m] || 0;
+                                data.push(val);
+                                bgColors.push(palette[idx % palette.length]);
+                                
+                                let trendStr = "";
+                                const allIdx = this.monthColumns.indexOf(m);
+                                if (allIdx > 0) {
+                                    const prevM = this.monthColumns[allIdx - 1];
+                                    const prevVal = realCcMap[cc][prevM] || 0;
+                                    if (prevVal > 0) {
+                                        const pct = ((val - prevVal)/prevVal)*100;
+                                        trendStr = (pct >= 0 ? '↑' : '↓') + Math.abs(pct).toFixed(0) + '%';
+                                    } else if (val > 0) trendStr = '↑100%';
+                                }
+                                const fmtV = val >= 1000000 ? (val/1000000).toFixed(1) + 'M' : (val/1000).toFixed(0) + 'k';
+                                trendData.push(trendStr && val > 0 ? [trendStr, fmtV] : (val > 0 ? [fmtV] : []));
+
+                                if (idx === 2) {
+                                    const mTot = contracts.reduce((a, x) => a + (this.parseNumber(x[m])), 0);
+                                    groupLabels.push([m, mTot >= 1000000 ? (mTot/1000000).toFixed(1) + 'M' : (mTot/1000).toFixed(0) + 'k']);
+                                } else groupLabels.push("");
+                            });
+                            if (mIdx < months.length - 1) { labels.push(""); data.push(null); bgColors.push('transparent'); trendData.push([]); groupLabels.push(""); }
+                        });
+
+                        chartInstances.trend = new Chart(ctxTrend, {
+                            type: 'bar',
+                            data: { labels: labels, datasets: [{ data: data, backgroundColor: bgColors, borderRadius: 2 }] },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    datalabels: {
+                                        anchor: 'end', align: 'top', font: { size: 8, weight: 'bold' },
+                                        color: (ctx) => {
+                                            const labelsVal = trendData[ctx.dataIndex] || [];
+                                            if (labelsVal[0]?.includes('↑')) return '#4ade80';
+                                            if (labelsVal[0]?.includes('↓')) return '#f87171';
+                                            return '#64748b';
+                                        },
+                                        formatter: (v, ctx) => trendData[ctx.dataIndex].join('\n'),
+                                        textAlign: 'center'
+                                    }
+                                },
+                                scales: {
+                                    y: { display: false, grace: '20%' },
+                                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 8 } } },
+                                    xGroup: { type: 'category', labels: groupLabels, grid: { display: false }, ticks: { color: '#fff', font: { size: 10, weight: 'bold' } } }
+                                }
+                            }
+                        });
+                    }
+
+                    const ctxAbc = document.getElementById('abcChart')?.getContext('2d');
+                    if (ctxAbc) {
+                        if (chartInstances.abc) chartInstances.abc.destroy();
+                        const sectorTotals = {};
+                        this.contracts.forEach(c => {
+                            const s = c['SETOR'] || 'N/I';
+                            const v = this.filters.month === 'all' ? (c['VALOR MEDIDO']||0) : this.parseNumber(c[this.filters.month]);
+                            if (v > 0) sectorTotals[s] = (sectorTotals[s] || 0) + v;
+                        });
+                        const sorted = Object.keys(sectorTotals).map(s => ({ s, total: sectorTotals[s] })).sort((a,b) => b.total - a.total).slice(0, 10);
+                        const totalABC = sorted.reduce((a, x) => a + x.total, 0);
+
+                        chartInstances.abc = new Chart(ctxAbc, {
+                            type: 'bar',
+                            data: {
+                                labels: sorted.map(x => x.s.length > 15 ? x.s.substring(0, 15) + '..' : x.s),
+                                datasets: [{ data: sorted.map(x => x.total), backgroundColor: ['#38bdf8', '#fb923c', '#4ade80', '#f472b6', '#a78bfa', '#2dd4bf', '#facc15', '#a3e635', '#f87171', '#c084fc'], borderRadius: 6 }]
+                            },
+                            options: {
+                                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    datalabels: {
+                                        anchor: 'end', align: 'right', font: { size: 10, weight: 'bold' }, color: '#94a3b8',
+                                        formatter: (val) => {
+                                            const pct = ((val / totalABC) * 100).toFixed(1) + '%';
+                                            const fmt = val >= 1000000 ? (val/1000000).toFixed(1) + 'M' : (val/1000).toFixed(0) + 'k';
+                                            return `${fmt} (${pct})`;
+                                        }
+                                    }
+                                },
+                                scales: { x: { display: false }, y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } } }
+                            }
+                        });
+                    }
+                },
+
+                toggleSort(col) { if (this.sortBy === col) this.sortDesc = !this.sortDesc; else { this.sortBy = col; this.sortDesc = true; } },
+                resetFilters() { this.filters.month = 'all'; this.searchQuery = ''; this.updateCharts(); }
+            };
+        };
+    </script>
+</body>
+</html>
