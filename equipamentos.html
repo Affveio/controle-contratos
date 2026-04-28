@@ -58,6 +58,171 @@
 
     <!-- Main Content -->
     <main class="p-2 md:px-4 md:pt-2 md:pb-4 lg:px-8 lg:pt-2 lg:pb-8 min-h-screen">
+
+        <div class="sticky top-0 z-[90] bg-[#0f172a] pb-4 pt-2 -mt-2 -mx-2 px-2 md:-mx-4 md:px-4 lg:-mx-8 lg:px-8 border-b border-white/5 shadow-2xl mb-4">
+            <header class="flex flex-col lg:flex-row justify-between items-center mb-4 gap-3 sm:gap-4 text-center sm:text-left">
+            <div class="flex items-center gap-6">
+                <!-- Branding -->
+                <div class="pr-4 border-r border-white/10 hidden sm:block">
+                    <img src="logo_aterpa.png" alt="Aterpa Logo" class="h-12 sm:h-16 object-contain drop-shadow-lg opacity-90" />
+                </div>
+                
+                <!-- Page Title -->
+                <div>
+                    <h2 class="text-2xl font-bold text-white mb-0.5" x-text="viewTitle"></h2>
+                    <p class="text-slate-400 text-sm">
+                        <span x-text="dataView === 'contracts' ? 'Gestão Mensal de Contratos' : 'Gestão de Equipamentos'"></span>
+                        <template x-if="dataView === 'assets' && filters.month !== 'all'">
+                            <span class="text-sky-400 font-bold ml-2" x-text="'(Período: ' + reportingPeriod + ')'"></span>
+                        </template>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Navigation and Tools -->
+            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 w-full lg:w-auto">
+                <!-- Nav Buttons Overlay -->
+                <div class="flex flex-wrap justify-center glass p-1 rounded-2xl sm:mr-4 border border-white/5 w-full sm:w-auto">
+                    <button @click="currentView = 'overview'" :class="currentView === 'overview' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center flex-1 sm:flex-none justify-center">
+                        Visão Geral
+                    </button>
+                    <button @click="currentView = 'A369'" :class="currentView === 'A369' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex-1 sm:flex-none justify-center">
+                        Obra A369
+                    </button>
+                    <button @click="currentView = 'A375'" :class="currentView === 'A375' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex-1 sm:flex-none justify-center">
+                        Obra A375
+                    </button>
+                </div>
+
+                <!-- Toggle Visualização (Movido para o Topo) -->
+                <div class="flex items-center gap-2 glass p-1 rounded-2xl border border-white/5">
+                    <a href="index.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all duration-300">Portal</a>
+                    <a href="contratos.html" :class="dataView === 'contracts' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300">Contratos</a>
+                    <a href="equipamentos.html" :class="dataView === 'assets' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300">Equipamentos</a>
+                </div>
+
+
+                <!-- Settings/Filters Trigger -->
+                <button @click="showFilters = !showFilters" :class="showFilters ? 'bg-sky-500 text-white' : 'glass text-slate-400 hover:text-white'" class="p-2.5 rounded-2xl flex items-center transition-all border border-white/5">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    <span class="ml-2 text-xs font-bold" x-text="showFilters ? 'Fechar Filtros' : 'Filtros'"></span>
+                </button>
+
+                <div class="glass px-3 py-2 rounded-2xl flex flex-col sm:flex-row items-center gap-2 text-[10px] border border-white/5 uppercase tracking-wider font-bold text-slate-400">
+                    <div class="flex items-center">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                        Live
+                    </div>
+                    <template x-if="lastUpdated">
+                        <div class="flex items-center gap-2">
+                            <span class="hidden sm:block w-px h-3 bg-white/20"></span>
+                            <span>Atualizado: <span class="text-sky-400 font-black ml-1" x-text="lastUpdated"></span></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </header>
+            <div x-show="dataView === 'assets'" x-cloak>
+                <!-- Asset Dashboard Filters -->
+            <div class="glass px-4 py-3 rounded-xl mb-0 flex flex-col xl:flex-row gap-4 items-center animate-fade-in border-sky-500/20 bg-sky-500/5">
+                <div class="w-full xl:w-auto flex-none flex justify-between items-center xl:flex-col xl:items-start xl:gap-2">
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Filtros de Equipamentos</h3>
+                        <p class="text-[9px] text-slate-500 uppercase tracking-wider">KPIs, Gráfico e Tabela</p>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1 xl:mt-0">
+                        <button @click="window.print()" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(14,165,233,0.3)] border border-sky-400/50">
+                            <i class="fas fa-print"></i> PDF
+                        </button>
+                        <button @click="exportDemobilizationReport()" class="flex bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-colors shadow-[0_0_15px_rgba(244,63,94,0.3)] border border-rose-400/50">
+                            <i class="fas fa-file-export"></i> Corte
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2 w-full items-end">
+                    <!-- Mês -->
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Mês</label>
+                        <select x-model="assetFilters.month" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
+                            <option value="all">Todos</option>
+                            <template x-for="m in uniqueAssetMonths" :key="m">
+                                <option :value="m" x-text="m"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Pesquisa por AL -->
+                    <div class="w-full sm:w-48">
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Pesquisar AL</label>
+                        <input type="text" x-model="assetFilters.al" placeholder="Ex: AL-..." class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-3 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500 placeholder-slate-600">
+                    </div>
+
+                    <!-- Categoria -->
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Categoria</label>
+                        <select x-model="assetFilters.category" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
+                            <option value="all">Todas</option>
+                            <template x-for="cat in uniqueAssetCategories" :key="cat">
+                                <option :value="cat" x-text="cat"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Equipamento -->
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Equipamento</label>
+                        <select x-model="assetFilters.equipment" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
+                            <option value="all">Todos</option>
+                            <template x-for="eq in uniqueAssetEquipments" :key="eq">
+                                <option :value="eq" x-text="eq"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Empresa -->
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Empresa</label>
+                        <select x-model="assetFilters.company" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
+                            <option value="all">Todas</option>
+                            <template x-for="company in uniqueAssetCompanies" :key="company">
+                                <option :value="company" x-text="company"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Obra -->
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Obra</label>
+                        <select x-model="assetFilters.work" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
+                            <option value="all">Todas</option>
+                            <template x-for="work in uniqueAssetWorks" :key="work">
+                                <option :value="work" x-text="work"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status</label>
+                        <select x-model="assetFilters.status" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
+                            <option value="all">Todos</option>
+                            <template x-for="status in uniqueAssetStatuses" :key="status">
+                                <option :value="status" x-text="status"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Resetar -->
+                    <button @click="resetFilters('assets')" class="w-full py-1.5 h-[27px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-white/10 transition-colors flex items-center justify-center gap-1.5 group">
+                        <i class="ph ph-arrow-counter-clockwise transition-transform group-hover:rotate-180"></i>
+                        <span class="text-[9px] font-bold uppercase tracking-wider">Limpar</span>
+                    </button>
+                </div>
+            </div>
+            </div>
+        </div>
+        
         <!-- Modal de Drill-down (DETALHAMENTO DE EQUIPAMENTOS) -->
         <div class="fixed inset-0 z-[1000000] flex items-center justify-center p-4 md:p-10"
              style="display: none;"
@@ -254,28 +419,34 @@
                                         <span class="w-1.5 h-1.5 bg-sky-500 rounded-full"></span>
                                         Informações do Equipamento
                                     </h4>
-                                    <div class="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <p class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Modelo</p>
-                                            <p class="text-lg font-black text-white" x-text="drilldown.selectedAsset?.Modelo || drilldown.selectedAsset?.model || 'N/A'"></p>
+                                    <div class="grid grid-cols-3 gap-6">
+                                        <div class="col-span-1">
+                                            <p class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Denominação</p>
+                                            <p class="text-base font-black text-white truncate" x-text="drilldown.selectedAsset ? getAssetEquipmentGroup(drilldown.selectedAsset) : 'N/A'"></p>
                                         </div>
-                                        <div>
+                                        <div class="col-span-2">
                                             <p class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Parceiro</p>
-                                            <p class="text-lg font-black text-white" x-text="drilldown.selectedAsset?.Empresa_Locadora || drilldown.selectedAsset?.Empresa || 'N/A'"></p>
+                                            <p class="text-base font-black text-white truncate" x-text="drilldown.selectedAsset?.Empresa_Locadora || drilldown.selectedAsset?.Empresa || 'N/A'"></p>
                                         </div>
-                                        <div>
+                                        
+                                        <div class="pt-2">
                                             <p class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Performance Mês</p>
-                                            <p class="text-2xl font-black text-emerald-400" x-text="drilldown.selectedAsset ? Math.round(parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0) + 'h' : '0h'"></p>
+                                            <p class="text-xl font-black text-emerald-400" x-text="drilldown.selectedAsset ? Math.round(parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0) + 'h' : '0h'"></p>
                                         </div>
-                                        <div>
+                                        <div class="pt-2">
                                             <p class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Parada/Garantia</p>
-                                            <p class="text-2xl font-black text-rose-400" x-text="drilldown.selectedAsset ? Math.round(Math.max(0, getGuaranteeHours(drilldown.selectedAsset.Mes_Referencia) - (parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0))) + 'h' : '0h'"></p>
+                                            <p class="text-xl font-black text-rose-400" x-text="drilldown.selectedAsset ? Math.round(Math.max(0, getGuaranteeHours(drilldown.selectedAsset.Mes_Referencia) - (parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0))) + 'h' : '0h'"></p>
                                         </div>
-                                        <div class="col-span-2 pt-4 border-t border-white/5">
+                                        <div class="pt-2">
+                                            <p class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Total Manutenção</p>
+                                            <p class="text-xl font-black text-amber-400" x-text="drilldown.selectedAsset ? (parseFloat(drilldown.selectedAsset.TempoManutencao) || 0).toFixed(1) + 'h' : '0h'"></p>
+                                        </div>
+
+                                        <div class="col-span-3 pt-4 border-t border-white/5">
                                             <p class="text-[9px] text-sky-400 uppercase font-bold tracking-widest">Medição Estimada (R$)</p>
                                             <div class="flex items-end gap-3">
-                                                <p class="text-3xl font-black text-white" x-text="drilldown.selectedAsset ? formatCurrency(((parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0) + Math.max(0, getGuaranteeHours(drilldown.selectedAsset.Mes_Referencia) - (parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0))) * (parseFloat(drilldown.selectedAsset.ValorHora)||0)) : 'R$ 0,00'"></p>
-                                                <p class="text-[10px] text-slate-500 mb-2" x-text="drilldown.selectedAsset ? '(V. Hora: ' + formatCurrency(drilldown.selectedAsset.ValorHora) + ')' : ''"></p>
+                                                <p class="text-2xl font-black text-white" x-text="drilldown.selectedAsset ? formatCurrency(((parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0) + Math.max(0, getGuaranteeHours(drilldown.selectedAsset.Mes_Referencia) - (parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0))) * (parseFloat(drilldown.selectedAsset.ValorHora)||0)) : 'R$ 0,00'"></p>
+                                                <p class="text-[9px] text-slate-500 mb-1" x-text="drilldown.selectedAsset ? '(V. Hora: ' + formatCurrency(drilldown.selectedAsset.ValorHora) + ')' : ''"></p>
                                             </div>
                                         </div>
                                     </div>
@@ -298,10 +469,23 @@
                                           x-effect="
                                               if (drilldown.type === 'asset' && drilldown.selectedAsset) {
                                                   const al = drilldown.selectedAsset.AL || drilldown.selectedAsset.al;
-                                                  const hist = assets.filter(a => (a.AL || a.al) === al).sort((a,b) => parseMesAno(a.Mes_Referencia) - parseMesAno(b.Mes_Referencia));
-                                                  const labels = hist.map(h => h.Mes_Referencia);
-                                                  const dataTrabalho = hist.map(h => parseFloat(h.HorasTrabalhadas) || 0);
-                                                  const dataGarantia = hist.map(h => Math.max(0, getGuaranteeHours(h.Mes_Referencia) - (parseFloat(h.HorasTrabalhadas) || 0)));
+                                                  // Deduplicate by Mes_Referencia
+                                                  const histMap = new Map();
+                                                  assets.filter(a => (a.AL || a.al) === al).forEach(a => {
+                                                      if(!histMap.has(a.Mes_Referencia)) histMap.set(a.Mes_Referencia, a);
+                                                  });
+                                                  const hist = Array.from(histMap.values()).sort((a,b) => parseMesAno(a.Mes_Referencia) - parseMesAno(b.Mes_Referencia));
+                                                  
+                                                  // Make hist available globally for the table template
+                                                  drilldown.assetHistory = hist.sort((a,b) => parseMesAno(b.Mes_Referencia) - parseMesAno(a.Mes_Referencia));
+                                                  
+                                                  // Sort asc for chart
+                                                  const chartHist = [...hist].reverse();
+                                                  
+                                                  const labels = chartHist.map(h => h.Mes_Referencia);
+                                                  const dataTrabalho = chartHist.map(h => parseFloat(h.HorasTrabalhadas) || 0);
+                                                  const dataManutencao = chartHist.map(h => parseFloat(h.TempoManutencao) || 0);
+                                                  const dataGarantia = chartHist.map(h => Math.max(0, getGuaranteeHours(h.Mes_Referencia) - (parseFloat(h.HorasTrabalhadas) || 0)));
                                                   
                                                   setTimeout(() => {
                                                       const ctx = document.getElementById('assetHistChart');
@@ -313,6 +497,7 @@
                                                               labels: labels,
                                                               datasets: [
                                                                   { label: 'Trabalhadas', data: dataTrabalho, backgroundColor: 'rgba(52, 211, 153, 0.8)', borderRadius: 4 },
+                                                                  { label: 'Manutenção', data: dataManutencao, backgroundColor: 'rgba(250, 204, 21, 0.8)', borderRadius: 4 },
                                                                   { label: 'Garantia', data: dataGarantia, backgroundColor: 'rgba(251, 113, 133, 0.6)', borderRadius: 4 }
                                                               ]
                                                           },
@@ -348,26 +533,140 @@
                                                  <th class="px-6 py-4 text-left">Mês de Referência</th>
                                                  <th class="px-6 py-4 text-left">Localização / Obra</th>
                                                  <th class="px-6 py-4 text-right">H. Trabalhadas</th>
+                                                 <th class="px-6 py-4 text-right">H. Manutenção</th>
                                                  <th class="px-6 py-4 text-right">Garantia</th>
                                                  <th class="px-6 py-4 text-center">Status Operacional</th>
                                              </tr>
                                          </thead>
-                                         <tbody class="divide-y divide-white/5">
-                                             <template x-for="hist in assets.filter(a => drilldown.selectedAsset && (a.AL || a.al) === (drilldown.selectedAsset.al || drilldown.selectedAsset.AL)).sort((a,b) => parseMesAno(b.Mes_Referencia) - parseMesAno(a.Mes_Referencia))" :key="hist.id">
+                                                                                  <tbody class="divide-y divide-white/5">
+                                             <template x-for="hist in drilldown.assetHistory || []" :key="hist.Mes_Referencia">
                                                  <tr class="hover:bg-white/[0.02] transition-colors">
                                                      <td class="px-6 py-4 font-bold text-slate-300" x-text="hist.Mes_Referencia"></td>
                                                      <td class="px-6 py-4 text-slate-400 text-[10px]" x-text="hist.Obra"></td>
-                                                     <td class="px-6 py-4 text-right text-emerald-400 font-bold" x-text="parseFloat(hist.HorasTrabalhadas).toFixed(1) + 'h'"></td>
-                                                     <td class="px-6 py-4 text-right text-rose-400 font-bold" x-text="Math.max(0, 200 - parseFloat(hist.HorasTrabalhadas)).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-emerald-400 font-bold" x-text="(parseFloat(hist.HorasTrabalhadas) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-yellow-400 font-bold" x-text="(parseFloat(hist.TempoManutencao) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-rose-400 font-bold" x-text="Math.max(0, getGuaranteeHours(hist.Mes_Referencia) - (parseFloat(hist.HorasTrabalhadas) || 0)).toFixed(1) + 'h'"></td>
                                                      <td class="px-6 py-4 text-center">
-                                                         <span class="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black uppercase" x-text="hist.Status_Operacional"></span>
+                                                         <span class="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black uppercase" x-text="hist.Status_Operacional || hist.Status"></span>
                                                      </td>
                                                  </tr>
                                              </template>
                                          </tbody>
                                      </table>
-                                 </div>
-                             </div>
+                                                          </div>
+                    </template>
+
+                    <!-- Drilldown de Manutenção (Independente) -->
+                    <template x-if="drilldown.type === 'maintenance'">
+                        <div class="space-y-6 animate-fade-in">
+                              <!-- Top Stats -->
+                              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <div class="glass p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+                                      <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Prejuízo Total Estimado</p>
+                                      <h4 class="text-xl font-black text-rose-400" x-text="'R$ ' + maintenanceDrilldownSummary.totalValor.toLocaleString('pt-BR', {minimumFractionDigits:2})"></h4>
+                                  </div>
+                                  <div class="glass p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+                                      <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Horas Totais de Parada</p>
+                                      <h4 class="text-xl font-black text-sky-400" x-text="maintenanceDrilldownSummary.totalHoras.toFixed(1) + 'h'"></h4>
+                                  </div>
+                                  <div class="glass p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+                                      <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Equipamentos Afetados</p>
+                                      <h4 class="text-xl font-black text-white" x-text="maintenanceDrilldownSummary.equipCount"></h4>
+                                  </div>
+                              </div>
+
+                              <!-- Table -->
+                              <div class="bg-slate-900/50 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                                  <div class="overflow-x-auto">
+                                      <table class="w-full text-[10px]">
+                                          <thead class="bg-white/5 border-b border-white/5">
+                                              <tr class="text-slate-500 uppercase font-black tracking-widest text-[8px]">
+                                                  <th class="px-6 py-4 text-left">Prefixo (AL)</th>
+                                                  <th class="px-6 py-4 text-left">Equipamento</th>
+                                                  <th class="px-6 py-4 text-left">Fornecedor</th>
+                                                  <th class="px-6 py-4 text-left">Motivo / Causa</th>
+                                                  <th class="px-6 py-4 text-center">Período</th>
+                                                  <th class="px-6 py-4 text-right">Valor (R$)</th>
+                                                  <th class="px-6 py-4 text-center">Resp.</th>
+                                              </tr>
+                                          </thead>
+                                                                                   <tbody class="divide-y divide-white/5">
+                                             <template x-for="hist in drilldown.assetHistory || []" :key="hist.Mes_Referencia">
+                                                 <tr class="hover:bg-white/[0.02] transition-colors">
+                                                     <td class="px-6 py-4 font-bold text-slate-300" x-text="hist.Mes_Referencia"></td>
+                                                     <td class="px-6 py-4 text-slate-400 text-[10px]" x-text="hist.Obra"></td>
+                                                     <td class="px-6 py-4 text-right text-emerald-400 font-bold" x-text="(parseFloat(hist.HorasTrabalhadas) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-yellow-400 font-bold" x-text="(parseFloat(hist.TempoManutencao) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-rose-400 font-bold" x-text="Math.max(0, getGuaranteeHours(hist.Mes_Referencia) - (parseFloat(hist.HorasTrabalhadas) || 0)).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-center">
+                                                         <span class="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black uppercase" x-text="hist.Status_Operacional || hist.Status"></span>
+                                                     </td>
+                                                 </tr>
+                                             </template>
+                                         </tbody>
+                                      </table>
+                                  </div>
+                                  <template x-if="drilldown.data.length === 0">
+                                      <div class="p-12 text-center">
+                                          <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-600 text-xl">
+                                              <i class="fas fa-search"></i>
+                                          </div>
+                                          <p class="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Nenhum registro encontrado</p>
+                                      </div>
+                                  </template>
+                              </div>
+                         </div>
+                    </template>
+
+                    <!-- Drilldown de OEE (Novo) -->
+                    <template x-if="drilldown.type === 'oee'">
+                        <div class="space-y-6 animate-fade-in">
+                            <div class="bg-sky-500/10 border border-sky-500/20 p-4 rounded-2xl">
+                                <p class="text-slate-300 text-xs leading-relaxed">
+                                    Esta visão detalha a <b>Eficiência Global (OEE)</b> individual de cada ativo da família <b class="text-sky-400" x-text="drilldown.selectedFamily"></b>. 
+                                    O cálculo considera a carga nominal de <b>200h/mês</b>.
+                                </p>
+                            </div>
+
+                            <div class="bg-slate-900/50 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-[10px]">
+                                        <thead class="bg-white/5 border-b border-white/5">
+                                            <tr class="text-slate-500 uppercase font-black tracking-widest text-[8px]">
+                                                <th class="px-6 py-4 text-left">Prefixo (AL)</th>
+                                                <th class="px-6 py-4 text-left">Modelo</th>
+                                                <th class="px-6 py-4 text-center" style="width: 250px;">Composição do Tempo (OEE)</th>
+                                                <th class="px-6 py-4 text-right">Trabalho</th>
+                                                <th class="px-6 py-4 text-right">Manut.</th>
+                                                <th class="px-6 py-4 text-right">Ocioso</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-white/5">
+                                            <template x-for="item in drilldown.data || []" :key="item.al">
+                                                <tr class="hover:bg-white/[0.02] transition-colors">
+                                                    <td class="px-6 py-4 font-bold text-slate-300" x-text="item.al"></td>
+                                                    <td class="px-6 py-4 text-slate-400" x-text="item.modelo"></td>
+                                                    <td class="px-6 py-4">
+                                                        <div class="flex h-3 w-full rounded-full overflow-hidden bg-slate-800 border border-white/5 shadow-inner">
+                                                            <div class="h-full bg-emerald-500 transition-all duration-500" :style="'width: ' + item.pWorked + '%'" :title="'Trabalho: ' + item.pWorked.toFixed(1) + '%'"></div>
+                                                            <div class="h-full bg-amber-400 transition-all duration-500" :style="'width: ' + item.pMaintenance + '%'" :title="'Manutenção: ' + item.pMaintenance.toFixed(1) + '%'"></div>
+                                                            <div class="h-full bg-rose-500 transition-all duration-500" :style="'width: ' + item.pIdle + '%'" :title="'Ociosidade: ' + item.pIdle.toFixed(1) + '%'"></div>
+                                                        </div>
+                                                        <div class="flex justify-between mt-1 text-[8px] font-black uppercase tracking-tighter">
+                                                            <span class="text-emerald-400" x-text="item.pWorked.toFixed(0) + '%'"></span>
+                                                            <span class="text-amber-400" x-text="item.pMaintenance.toFixed(0) + '%'"></span>
+                                                            <span class="text-rose-400" x-text="item.pIdle.toFixed(0) + '%'"></span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-right text-emerald-400 font-bold" x-text="item.worked.toFixed(1) + 'h'"></td>
+                                                    <td class="px-6 py-4 text-right text-amber-400 font-bold" x-text="item.maintenance.toFixed(1) + 'h'"></td>
+                                                    <td class="px-6 py-4 text-right text-rose-400 font-bold" x-text="item.idle.toFixed(1) + 'h'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -383,68 +682,7 @@
         </div>
         
         <!-- Top bar Refatorado -->
-        <header class="flex flex-col lg:flex-row justify-between items-center mb-4 gap-3 sm:gap-4 text-center sm:text-left">
-            <div class="flex items-center gap-6">
-                <!-- Branding -->
-                <div class="pr-4 border-r border-white/10 hidden sm:block">
-                    <img src="logo_aterpa.png" alt="Aterpa Logo" class="h-12 sm:h-16 object-contain drop-shadow-lg opacity-90" />
-                </div>
-                
-                <!-- Page Title -->
-                <div>
-                    <h2 class="text-2xl font-bold text-white mb-0.5" x-text="viewTitle"></h2>
-                    <p class="text-slate-400 text-sm">
-                        <span x-text="dataView === 'contracts' ? 'Gestão Mensal de Contratos' : 'Gestão de Equipamentos'"></span>
-                        <template x-if="dataView === 'assets' && filters.month !== 'all'">
-                            <span class="text-sky-400 font-bold ml-2" x-text="'(Período: ' + reportingPeriod + ')'"></span>
-                        </template>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Navigation and Tools -->
-            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 w-full lg:w-auto">
-                <!-- Nav Buttons Overlay -->
-                <div class="flex flex-wrap justify-center glass p-1 rounded-2xl sm:mr-4 border border-white/5 w-full sm:w-auto">
-                    <button @click="currentView = 'overview'" :class="currentView === 'overview' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center flex-1 sm:flex-none justify-center">
-                        Visão Geral
-                    </button>
-                    <button @click="currentView = 'A369'" :class="currentView === 'A369' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex-1 sm:flex-none justify-center">
-                        Obra A369
-                    </button>
-                    <button @click="currentView = 'A375'" :class="currentView === 'A375' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex-1 sm:flex-none justify-center">
-                        Obra A375
-                    </button>
-                </div>
-
-                <!-- Toggle Visualização (Movido para o Topo) -->
-                <div class="flex items-center gap-2 glass p-1 rounded-2xl border border-white/5">
-                    <a href="index.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all duration-300">Portal</a>
-                    <a href="contratos.html" :class="dataView === 'contracts' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300">Contratos</a>
-                    <a href="equipamentos.html" :class="dataView === 'assets' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300">Equipamentos</a>
-                </div>
-
-
-                <!-- Settings/Filters Trigger -->
-                <button @click="showFilters = !showFilters" :class="showFilters ? 'bg-sky-500 text-white' : 'glass text-slate-400 hover:text-white'" class="p-2.5 rounded-2xl flex items-center transition-all border border-white/5">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                    <span class="ml-2 text-xs font-bold" x-text="showFilters ? 'Fechar Filtros' : 'Filtros'"></span>
-                </button>
-
-                <div class="glass px-3 py-2 rounded-2xl flex flex-col sm:flex-row items-center gap-2 text-[10px] border border-white/5 uppercase tracking-wider font-bold text-slate-400">
-                    <div class="flex items-center">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-                        Live
-                    </div>
-                    <template x-if="lastUpdated">
-                        <div class="flex items-center gap-2">
-                            <span class="hidden sm:block w-px h-3 bg-white/20"></span>
-                            <span>Atualizado: <span class="text-sky-400 font-black ml-1" x-text="lastUpdated"></span></span>
-                        </div>
-                    </template>
-                </div>
-            </div>
-        </header>
+        
 
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" x-show="dataView === 'contracts'">
@@ -468,87 +706,7 @@
 
         <!-- Equipment Global Dashboards & KPIs -->
         <div x-show="dataView === 'assets'" x-cloak class="mb-8 animate-fade-in-up">
-            <!-- Asset Dashboard Filters -->
-            <div class="glass px-4 py-3 rounded-xl mb-6 flex flex-col xl:flex-row gap-4 items-center animate-fade-in border-sky-500/20 bg-sky-500/5">
-                <div class="w-full xl:w-auto flex-none">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Filtros de Equipamentos</h3>
-                    <p class="text-[9px] text-slate-500 uppercase tracking-wider">KPIs, Gráfico e Tabela</p>
-                </div>
-                
-                <div class="flex-1 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2 w-full items-end">
-                    <!-- Mês -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Mês</label>
-                        <select x-model="assetFilters.month" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
-                            <option value="all">Todos</option>
-                            <template x-for="m in uniqueAssetMonths" :key="m">
-                                <option :value="m" x-text="m"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Categoria -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Categoria</label>
-                        <select x-model="assetFilters.category" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
-                            <option value="all">Todas</option>
-                            <template x-for="cat in uniqueAssetCategories" :key="cat">
-                                <option :value="cat" x-text="cat"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Equipamento -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Equipamento</label>
-                        <select x-model="assetFilters.equipment" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
-                            <option value="all">Todos</option>
-                            <template x-for="eq in uniqueAssetEquipments" :key="eq">
-                                <option :value="eq" x-text="eq"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Empresa -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Empresa</label>
-                        <select x-model="assetFilters.company" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
-                            <option value="all">Todas</option>
-                            <template x-for="company in uniqueAssetCompanies" :key="company">
-                                <option :value="company" x-text="company"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Obra -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Obra</label>
-                        <select x-model="assetFilters.work" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
-                            <option value="all">Todas</option>
-                            <template x-for="work in uniqueAssetWorks" :key="work">
-                                <option :value="work" x-text="work"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Status -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status</label>
-                        <select x-model="assetFilters.status" class="w-full bg-slate-900/50 border border-white/5 rounded-lg text-[10px] px-2 py-1.5 text-slate-200 focus:ring-1 focus:ring-sky-500">
-                            <option value="all">Todos</option>
-                            <template x-for="status in uniqueAssetStatuses" :key="status">
-                                <option :value="status" x-text="status"></option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <!-- Resetar -->
-                    <button @click="resetFilters('assets')" class="w-full py-1.5 h-[27px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-white/10 transition-colors flex items-center justify-center gap-1.5 group">
-                        <i class="ph ph-arrow-counter-clockwise transition-transform group-hover:rotate-180"></i>
-                        <span class="text-[9px] font-bold uppercase tracking-wider">Limpar</span>
-                    </button>
-                </div>
-            </div>
+            
             
             <!-- Globals (Moved Up) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -569,7 +727,7 @@
             <!-- DIAGNÓSTICO DE DIMENSIONAMENTO E PERDA FINANCEIRA (NOVO) -->
             <div class="animate-fade-in mt-8">
                 <!-- KPIs Financeiros -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <!-- Balanço Financeiro: Prejuízo vs Produzido -->
                     <div class="glass flex flex-col rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden"
                          x-data="{ 
@@ -634,9 +792,33 @@
                             Percentual essencial da frota
                         </div>
                     </div>
+                    <!-- Economia Potencial Projetada -->
+                    <div class="glass p-4 rounded-2xl border-l-4 border-sky-500 bg-gradient-to-br from-sky-500/10 to-transparent">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] font-black text-sky-400 uppercase tracking-widest">Economia Projetada (6m)</span>
+                                <div class="group relative">
+                                    <div class="w-4 h-4 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center cursor-help hover:bg-sky-500/20 transition-all">
+                                        <i class="fas fa-info text-[8px] text-sky-400"></i>
+                                    </div>
+                                    <div class="absolute z-[100] right-0 top-6 w-64 p-3 bg-slate-900 border border-sky-500/30 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 text-[10px] leading-relaxed text-slate-300 translate-y-1 group-hover:translate-y-0">
+                                        Este valor projeta o retorno financeiro para a obra nos próximos 6 meses caso todas as máquinas em excesso sejam devolvidas ao fornecedor, estancando o "Prejuízo por Ociosidade" atual.
+                                    </div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chart-line text-sky-500 text-xs"></i>
+                        </div>
+                        <div class="text-3xl font-black text-white mb-1 flex items-baseline gap-1">
+                            <span class="text-lg text-sky-500">R$</span><span x-text="(fleetSizingSummary.idleCost * 6).toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 0})"></span>
+                        </div>
+                        <div class="text-[9px] text-slate-400 font-medium italic">
+                            Retorno estimado com desmobilização
+                        </div>
+                    </div>
+
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
                     <!-- Gráfico Comparativo -->
                     <div class="glass p-4 rounded-2xl relative">
                         <div class="flex items-center gap-2 mb-3">
@@ -679,6 +861,46 @@
                             </template>
                         </div>
                     </div>
+                    <!-- Top 5 Piores Ativos (Lista Negra) -->
+                    <div class="glass p-4 rounded-2xl relative overflow-hidden flex flex-col">
+                        <div class="absolute inset-0 bg-rose-500/5 pointer-events-none"></div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-xs font-bold text-rose-400 uppercase tracking-widest flex items-center gap-2">
+                                <i class="fas fa-skull-crossbones text-rose-500"></i>
+                                Ranking de Ativos por Prejuízo
+                            </h3>
+                            <div class="group relative">
+                                <div class="w-5 h-5 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center cursor-help hover:bg-rose-500/20 transition-all">
+                                    <i class="fas fa-info text-[10px] text-rose-400"></i>
+                                </div>
+                                <div class="absolute z-50 right-0 top-7 w-64 p-4 bg-slate-900 border border-rose-500/30 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 text-[11px] leading-relaxed text-slate-300 translate-y-2 group-hover:translate-y-0">
+                                    Ranking das máquinas individuais com maior prejuízo financeiro acumulado por ociosidade. Alvos primários para desmobilização.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar relative z-10 flex-1">
+                            <template x-for="(asset, index) in getTopWorstAssets" :key="asset.AL">
+                                <div @click="openAssetDrilldown(asset.AL)" class="p-3 rounded-xl bg-slate-900/60 border border-rose-500/20 flex items-center justify-between group hover:border-rose-500/60 transition-all cursor-pointer">
+                                    <div class="flex items-center gap-3 w-[60%]">
+                                        <div class="w-6 h-6 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400 font-black text-[10px] flex-none" x-text="'#' + (index + 1)"></div>
+                                        <div class="truncate">
+                                            <div class="text-[11px] font-bold text-slate-100 truncate" x-text="asset.AL"></div>
+                                            <div class="text-[9px] text-slate-500 uppercase font-bold truncate" x-text="getAssetEquipmentGroup(asset)"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right flex-none">
+                                        <div class="text-[9px] text-rose-500 uppercase font-black mb-0.5">Prejuízo Mensal</div>
+                                        <div class="text-[11px] font-bold text-rose-400 whitespace-nowrap" x-text="'R$ ' + asset._idleCost.toLocaleString('pt-BR')"></div>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="getTopWorstAssets.length === 0">
+                                <div class="text-center p-4 text-slate-500 text-xs h-full flex items-center justify-center border border-white/5 rounded-xl border-dashed">Nenhum ativo com prejuízo encontrado.</div>
+                            </template>
+                        </div>
+                    </div>
+
+
                 </div>
             </div>
             
@@ -745,28 +967,7 @@
             </div>
         </div>
 
-        <!-- Gráfico de Eficiência Financeira por Parceiro (NOVO) -->
-        <div class="grid grid-cols-1 gap-4 mb-6" x-show="dataView === 'assets'" x-cloak>
-            <div class="glass p-4 rounded-2xl animate-fade-in relative">
-                <div class="flex items-center gap-2 mb-4">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Eficiência por Parceiro: Produção vs. Medição</h3>
-                    <div class="group relative">
-                        <div class="w-5 h-5 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center cursor-help hover:bg-sky-500/20 transition-all">
-                            <i class="fas fa-info text-[10px] text-sky-400"></i>
-                        </div>
-                        <div class="absolute z-[100] left-0 top-7 w-80 p-4 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 text-[11px] leading-relaxed text-slate-300 translate-y-2 group-hover:translate-y-0">
-                            <p class="mb-2">Cruza dados operacionais com financeiros:</p>
-                            <p class="mb-1"><strong class="text-emerald-400 uppercase">Barras Verdes/Vermelhas (Eixo Esq.):</strong> Total de Horas Trabalhadas vs. Horas Garantia.</p>
-                            <p><strong class="text-sky-400 uppercase">Linha Azul (Eixo Dir.):</strong> Valor total medido (R$) da empresa no período.</p>
-                            <p class="mt-2 italic text-slate-400">Ajuda a identificar parceiros com recebimento alto mas baixa produção.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="h-[400px] sm:h-[500px]">
-                    <canvas id="partnerEfficiencyChart"></canvas>
-                </div>
-            </div>
-        </div>
+
 
         <div class="grid grid-cols-1 gap-4 mb-6" x-show="dataView === 'assets'" x-cloak>
             <div class="glass p-4 rounded-2xl animate-fade-in relative">
@@ -797,7 +998,7 @@
             <!-- Visão Global (Rosca) -->
             <div class="glass p-4 rounded-2xl animate-fade-in relative lg:col-span-2">
                 <div class="flex items-center justify-center gap-2 mb-4">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest text-center">Resumo Global de Causas (%)</h3>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest text-center">Manutenção: Resumo Global de Causas (%)</h3>
                     <div class="group relative">
                         <div class="w-5 h-5 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center cursor-help hover:bg-sky-500/20 transition-all">
                             <i class="fas fa-info text-[10px] text-sky-400"></i>
@@ -821,7 +1022,7 @@
             <!-- Detalhe por Família (Barras Horizontais Empilhadas) -->
             <div class="glass p-4 rounded-2xl animate-fade-in relative lg:col-span-3">
                 <div class="flex items-center gap-2 mb-4">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Métricas por Família (Horas Totais)</h3>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Manutenção: Métricas por Família (Horas Totais)</h3>
                     <div class="group relative">
                         <div class="w-5 h-5 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center cursor-help hover:bg-sky-500/20 transition-all">
                             <i class="fas fa-info text-[10px] text-sky-400"></i>
@@ -943,9 +1144,12 @@
                                     <template x-for="m in monthColumns" :key="'month-list-' + m">
                                         <option :value="m" x-text="m"></option>
                                     </template>
-                                </select>
-                            </div>
-                        </div>
+                        </select>
+                    </div>
+                </div>
+                <button @click="exportDemobilizationReport()" class="hidden xl:flex ml-auto bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest items-center gap-2 transition-colors shadow-[0_0_15px_rgba(244,63,94,0.3)] whitespace-nowrap border border-rose-400/50">
+                    <i class="fas fa-file-export"></i> Desmobilização
+                </button>
                     </div>
                     
                     <div class="overflow-y-auto custom-scrollbar pr-2 h-[250px] sm:h-[300px]">
@@ -1082,15 +1286,20 @@
                                     <th class="px-3 py-2 text-right">Manut(D)</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-white/5">
-                                <template x-for="r in getAssetSummaryByWork('A369')" :key="r.equipment">
-                                    <tr>
-                                        <td class="px-3 py-2 text-slate-300 font-bold" x-text="r.equipment"></td>
-                                        <td class="px-3 py-2 text-right text-sky-400 font-mono" x-text="r.count"></td>
-                                        <td class="px-3 py-2 text-right text-amber-500 font-mono" x-text="r.maintenanceDays.toLocaleString('pt-BR', {maximumFractionDigits:1})"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
+                                                                     <tbody class="divide-y divide-white/5">
+                                             <template x-for="hist in drilldown.assetHistory || []" :key="hist.Mes_Referencia">
+                                                 <tr class="hover:bg-white/[0.02] transition-colors">
+                                                     <td class="px-6 py-4 font-bold text-slate-300" x-text="hist.Mes_Referencia"></td>
+                                                     <td class="px-6 py-4 text-slate-400 text-[10px]" x-text="hist.Obra"></td>
+                                                     <td class="px-6 py-4 text-right text-emerald-400 font-bold" x-text="(parseFloat(hist.HorasTrabalhadas) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-yellow-400 font-bold" x-text="(parseFloat(hist.TempoManutencao) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-rose-400 font-bold" x-text="Math.max(0, getGuaranteeHours(hist.Mes_Referencia) - (parseFloat(hist.HorasTrabalhadas) || 0)).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-center">
+                                                         <span class="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black uppercase" x-text="hist.Status_Operacional || hist.Status"></span>
+                                                     </td>
+                                                 </tr>
+                                             </template>
+                                         </tbody>
                         </table>
                     </div>
                 </div>
@@ -1107,15 +1316,20 @@
                                     <th class="px-3 py-2 text-right">Manut(D)</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-white/5">
-                                <template x-for="r in getAssetSummaryByWork('A375')" :key="r.equipment">
-                                    <tr>
-                                        <td class="px-3 py-2 text-slate-300 font-bold" x-text="r.equipment"></td>
-                                        <td class="px-3 py-2 text-right text-emerald-400 font-mono" x-text="r.count"></td>
-                                        <td class="px-3 py-2 text-right text-amber-500 font-mono" x-text="r.maintenanceDays.toLocaleString('pt-BR', {maximumFractionDigits:1})"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
+                                                                     <tbody class="divide-y divide-white/5">
+                                             <template x-for="hist in drilldown.assetHistory || []" :key="hist.Mes_Referencia">
+                                                 <tr class="hover:bg-white/[0.02] transition-colors">
+                                                     <td class="px-6 py-4 font-bold text-slate-300" x-text="hist.Mes_Referencia"></td>
+                                                     <td class="px-6 py-4 text-slate-400 text-[10px]" x-text="hist.Obra"></td>
+                                                     <td class="px-6 py-4 text-right text-emerald-400 font-bold" x-text="(parseFloat(hist.HorasTrabalhadas) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-yellow-400 font-bold" x-text="(parseFloat(hist.TempoManutencao) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-rose-400 font-bold" x-text="Math.max(0, getGuaranteeHours(hist.Mes_Referencia) - (parseFloat(hist.HorasTrabalhadas) || 0)).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-center">
+                                                         <span class="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black uppercase" x-text="hist.Status_Operacional || hist.Status"></span>
+                                                     </td>
+                                                 </tr>
+                                             </template>
+                                         </tbody>
                         </table>
                     </div>
                 </div>
@@ -1170,7 +1384,7 @@
 
         <!-- Relatório de Fechamento Mensal Profissional -->
             <!-- Gráfico de Fechamento (Única Visão) -->
-            <div class="glass p-4 sm:p-8 rounded-3xl min-h-[350px] lg:min-h-[400px]">
+            <div class="glass p-4 sm:p-8 rounded-3xl min-h-[350px] lg:min-h-[400px]" style="display: none !important;">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
                     <div class="flex items-center space-x-4">
                         <div class="flex items-center gap-3">
@@ -1256,7 +1470,7 @@
         </div>
 
         <!-- Charts Row -->
-        <div class="grid grid-cols-1 gap-8 mb-12 animate-fade-in">
+        <div class="grid grid-cols-1 gap-8 mb-12 animate-fade-in" style="display: none !important;">
             <div class="glass p-4 sm:p-8 rounded-3xl min-h-[400px] lg:min-h-[500px]">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 sm:mb-8">
                     <div class="flex w-full sm:w-auto justify-between sm:justify-start items-center space-x-4">
@@ -1290,7 +1504,7 @@
         </div>
 
         <!-- Contracts Table -->
-        <div class="glass rounded-3xl overflow-hidden mb-12">
+        <div class="glass rounded-3xl overflow-hidden mb-12" style="display: none !important;">
             <div class="p-4 sm:p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 class="text-xl font-bold">Detalhamento de Contratos</h3>
                 <div class="flex space-x-2">
@@ -1447,12 +1661,12 @@
                     <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Histórico de Medições Mensais</h4>
                     <div class="space-y-3">
                         <template x-for="m in monthColumns" :key="m">
-                            <div x-show="selectedContract && parseNumber(selectedContract[m]) > 0" class="flex justify-between items-center p-4 rounded-2xl bg-white/5 hover:bg-white/[0.08] transition-all group">
+                            <div x-show="selectedContract && parseNumber(selectedContract?.[m]) > 0" class="flex justify-between items-center p-4 rounded-2xl bg-white/5 hover:bg-white/[0.08] transition-all group">
                                 <div class="flex items-center">
                                     <div class="w-2 h-2 rounded-full bg-sky-500 mr-4 group-hover:scale-150 transition-transform"></div>
                                     <span class="text-sm font-bold text-slate-300 uppercase" x-text="m"></span>
                                 </div>
-                                <span class="text-sm font-bold text-white font-mono" x-text="formatCurrency(parseNumber(selectedContract[m]))"></span>
+                                <span class="text-sm font-bold text-white font-mono" x-text="selectedContract ? formatCurrency(parseNumber(selectedContract[m])) : '0'"></span>
                             </div>
                         </template>
                     </div>
@@ -1652,22 +1866,20 @@
                                         <th class="px-4 py-3 text-center">Status</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-white/5">
-                                    <template x-for="hist in assets.filter(a => selectedIndividualAsset && a.AL === selectedIndividualAsset.AL).sort((a,b) => b.Mes_Referencia.localeCompare(a.Mes_Referencia))" :key="hist.id">
-                                        <tr class="hover:bg-white/[0.02] transition-colors">
-                                            <td class="px-4 py-3 font-bold text-slate-300" x-text="hist.Mes_Referencia"></td>
-                                            <td class="px-4 py-3 text-slate-400" x-text="hist.Obra"></td>
-                                            <td class="px-4 py-3 text-right text-emerald-400 font-mono" x-text="(parseFloat(hist.HorasTrabalhadas)||0).toLocaleString('pt-BR', {maximumFractionDigits:1})"></td>
-                                            <td class="px-4 py-3 text-right text-amber-400 font-mono" x-text="(parseFloat(hist.HorasImprodutivas)||0).toLocaleString('pt-BR', {maximumFractionDigits:1})"></td>
-                                            <td class="px-4 py-3 text-right text-slate-500 font-mono" x-text="Math.max(0, 200 - (parseFloat(hist.HorasTrabalhadas)||0) - (parseFloat(hist.HorasImprodutivas)||0)).toLocaleString('pt-BR', {maximumFractionDigits:1})"></td>
-                                            <td class="px-4 py-3 text-center">
-                                                <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase" 
-                                                      :class="formatAssetStatus(hist).includes('MOBIL') ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'" 
-                                                      x-text="formatAssetStatus(hist)"></span>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
+                                                                         <tbody class="divide-y divide-white/5">
+                                             <template x-for="hist in drilldown.assetHistory || []" :key="hist.Mes_Referencia">
+                                                 <tr class="hover:bg-white/[0.02] transition-colors">
+                                                     <td class="px-6 py-4 font-bold text-slate-300" x-text="hist.Mes_Referencia"></td>
+                                                     <td class="px-6 py-4 text-slate-400 text-[10px]" x-text="hist.Obra"></td>
+                                                     <td class="px-6 py-4 text-right text-emerald-400 font-bold" x-text="(parseFloat(hist.HorasTrabalhadas) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-yellow-400 font-bold" x-text="(parseFloat(hist.TempoManutencao) || 0).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-right text-rose-400 font-bold" x-text="Math.max(0, getGuaranteeHours(hist.Mes_Referencia) - (parseFloat(hist.HorasTrabalhadas) || 0)).toFixed(1) + 'h'"></td>
+                                                     <td class="px-6 py-4 text-center">
+                                                         <span class="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black uppercase" x-text="hist.Status_Operacional || hist.Status"></span>
+                                                     </td>
+                                                 </tr>
+                                             </template>
+                                         </tbody>
                             </table>
                         </div>
                     </div>
@@ -1849,6 +2061,110 @@
                         this.drilldown.selectedFamily = null;
                         this.drilldown.selectedAsset = null;
                         this.drilldown.title = `Detalhamento Parceiro: ${partner}`;
+                        this.drilldown.isOpen = true;
+                    },
+
+                    openMaintenanceDrilldown(category, family = null) {
+                        this.drilldown.type = 'maintenance';
+                        this.drilldown.category = category;
+                        this.drilldown.selectedFamily = family;
+                        let categoryName = category === 'DESGASTE' ? 'Desgaste Natural' : category === 'FALHA' ? 'Falha de Operação' : 'Outras Causas';
+                        this.drilldown.title = `Detalhamento de Manutenção: ${categoryName}`;
+                        if (family) this.drilldown.title += ` - ${family}`;
+                        
+                        const results = [];
+                        this.filteredAssets.forEach(a => {
+                            // Filtro de Família se fornecido
+                            if (family && this.getAssetEquipmentGroup(a) !== family) return;
+
+                            const dg = parseFloat(a.TempoDesgaste) || 0;
+                            const fl = parseFloat(a.TempoFalha) || 0;
+                            const totalMnt = parseFloat(a.TempoManutencao) || 0;
+                            const ot = Math.max(0, totalMnt - (dg + fl));
+
+                            let match = false;
+                            if (category === 'DESGASTE' && dg > 0) match = true;
+                            else if (category === 'FALHA' && fl > 0) match = true;
+                            else if (category === 'OUTROS' && ot > 0) match = true;
+
+                            if (match) {
+                                const relatedDiscounts = (a.Descontos || []).filter(d => {
+                                    const resp = String(d.responsavel || '').toUpperCase();
+                                    if (category === 'DESGASTE') return resp.includes('FORNECEDOR');
+                                    if (category === 'FALHA') return resp.includes('OBRA');
+                                    return !resp.includes('FORNECEDOR') && !resp.includes('OBRA');
+                                });
+
+                                if (relatedDiscounts.length > 0) {
+                                    relatedDiscounts.forEach(d => {
+                                        results.push({
+                                            prefixo: a.AL || d.al || '-',
+                                            equipamento: a.Denominacao || a.Equipamento || '-',
+                                            fornecedor: a.Fornecedor || a.Empresa || '-',
+                                            motivo: d.motivo || a.Causa || a.Causa_Manutencao || 'Não especificado',
+                                            periodo: d.periodo || a.Mes_Referencia || '-',
+                                            valor: d.valor || 0,
+                                            responsavel: d.responsavel || '-',
+                                            horas: category === 'DESGASTE' ? dg : category === 'FALHA' ? fl : ot
+                                        });
+                                    });
+                                } else {
+                                    results.push({
+                                        prefixo: a.AL || '-',
+                                        equipamento: a.Denominacao || a.Equipamento || '-',
+                                        fornecedor: a.Fornecedor || a.Empresa || '-',
+                                        motivo: a.Causa || a.Causa_Manutencao || 'Operacional (Sem nota de desconto)',
+                                        periodo: a.Mes_Referencia || '-',
+                                        valor: 0,
+                                        responsavel: category === 'DESGASTE' ? 'FORNECEDOR' : category === 'FALHA' ? 'OBRA' : '-',
+                                        horas: category === 'DESGASTE' ? dg : category === 'FALHA' ? fl : ot
+                                    });
+                                }
+                            }
+                        });
+                        
+                        this.drilldown.data = results.sort((a,b) => b.valor - a.valor);
+                        this.drilldown.isOpen = true;
+                    },
+
+                    get maintenanceDrilldownSummary() {
+                        const data = this.drilldown.data || [];
+                        return {
+                            totalValor: data.reduce((sum, item) => sum + item.valor, 0),
+                            totalHoras: data.reduce((sum, item) => sum + item.horas, 0),
+                            equipCount: new Set(data.map(d => d.prefixo)).size
+                        };
+                    },
+
+                    openOEEDrilldown(family) {
+                        this.drilldown.type = 'oee';
+                        this.drilldown.selectedFamily = family;
+                        this.drilldown.title = `Análise de Eficiência (OEE): ${family}`;
+                        
+                        const assetsInFamily = this.filteredAssets.filter(a => this.getAssetEquipmentGroup(a) === family);
+                        
+                        const results = assetsInFamily.map(a => {
+                            const worked = parseFloat(a.HorasTrabalhadas) || 0;
+                            const maintenance = parseFloat(a.TempoManutencao) || 0;
+                            const total = 200; // Carga nominal padrão
+                            
+                            const pWorked = Math.min(100, (worked / total) * 100);
+                            const pMaintenance = Math.min(100 - pWorked, (maintenance / total) * 100);
+                            const pIdle = Math.max(0, 100 - pWorked - pMaintenance);
+                            
+                            return {
+                                al: a.AL || a.al,
+                                modelo: a.Modelo || '-',
+                                pWorked,
+                                pMaintenance,
+                                pIdle,
+                                worked: worked,
+                                maintenance: maintenance,
+                                idle: Math.max(0, total - (worked + maintenance))
+                            };
+                        });
+                        
+                        this.drilldown.data = results.sort((a,b) => b.pWorked - a.pWorked);
                         this.drilldown.isOpen = true;
                     },
 
@@ -2229,7 +2545,7 @@
 
                     resetFilters() {
                         this.filters = { sector: 'all', costCenter: 'all', month: 'all' };
-                        this.assetFilters = { month: 'all', equipment: 'all', company: 'all', work: 'all', status: 'all', category: 'all' };
+                        this.assetFilters = { month: 'all', equipment: 'all', company: 'all', work: 'all', status: 'all', category: 'all', al: '' };
                         this.searchQuery = '';
                     },
 
@@ -2359,7 +2675,7 @@
                         const map = new Map();
                         for (const a of this.filteredAssets) {
                             const fam = this.getAssetEquipmentGroup(a) || '-';
-                            if (!map.has(fam)) map.set(fam, { family: fam, desgaste: 0, falha: 0, outros: 0 });
+                            if (!map.has(fam)) map.set(fam, { family: fam, desgaste: 0, falha: 0, outros: 0, equips: new Set() });
                             const m = map.get(fam);
                             const dg = parseFloat(a.TempoDesgaste) || 0;
                             const fl = parseFloat(a.TempoFalha) || 0;
@@ -2367,18 +2683,58 @@
                             m.desgaste += dg;
                             m.falha += fl;
                             m.outros += Math.max(0, totalMnt - (dg + fl));
+                            if (totalMnt > 0) m.equips.add(a.AL);
                         }
-                        return Array.from(map.values()).filter(m => (m.desgaste + m.falha + m.outros) > 0).sort((a, b) => (b.desgaste + b.falha + b.outros) - (a.desgaste + a.falha + a.outros));
+                        return Array.from(map.values())
+                            .filter(m => (m.desgaste + m.falha + m.outros) > 0)
+                            .map(m => ({ ...m, count: m.equips.size }))
+                            .sort((a, b) => (b.desgaste + b.falha + b.outros) - (a.desgaste + a.falha + a.outros));
                     },
 
                     get getGlobalMaintenanceSummary() {
-                        const metrics = this.getAssetMaintenanceCauseMetrics;
-                        const summary = { desgaste: 0, falha: 0, outros: 0 };
-                        metrics.forEach(m => {
-                            summary.desgaste += m.desgaste;
-                            summary.falha += m.falha;
-                            summary.outros += m.outros;
+                        const summary = { 
+                            desgaste: 0, falha: 0, outros: 0, 
+                            countDesgaste: 0, countFalha: 0, countOutros: 0,
+                            valDesgaste: 0, valFalha: 0, valOutros: 0,
+                            totalEquipments: 0 
+                        };
+                        
+                        const setGlobal = new Set();
+                        const setDG = new Set();
+                        const setFL = new Set();
+                        const setOT = new Set();
+
+                        this.filteredAssets.forEach(a => {
+                            const dg = parseFloat(a.TempoDesgaste) || 0;
+                            const fl = parseFloat(a.TempoFalha) || 0;
+                            const totalMnt = parseFloat(a.TempoManutencao) || 0;
+                            const ot = Math.max(0, totalMnt - (dg + fl));
+
+                            summary.desgaste += dg;
+                            summary.falha += fl;
+                            summary.outros += ot;
+
+                            if (totalMnt > 0) setGlobal.add(a.AL);
+                            if (dg > 0) setDG.add(a.AL);
+                            if (fl > 0) setFL.add(a.AL);
+                            if (ot > 0) setOT.add(a.AL);
+
+                            if (a.Descontos && Array.isArray(a.Descontos)) {
+                                a.Descontos.forEach(d => {
+                                    const val = parseFloat(d.valor) || 0;
+                                    const resp = String(d.responsavel || '').toUpperCase();
+                                    if (resp.includes('FORNECEDOR')) summary.valDesgaste += val;
+                                    else if (resp.includes('OBRA')) summary.valFalha += val;
+                                    else summary.valOutros += val;
+                                });
+                            }
                         });
+
+                        summary.totalEquipments = setGlobal.size;
+                        summary.countDesgaste = setDG.size;
+                        summary.countFalha = setFL.size;
+                        summary.countOutros = setOT.size;
+                        
                         return summary;
                     },
 
@@ -2472,6 +2828,60 @@
                             .sort((a, b) => b.measured - a.measured);
                     },
 
+                    get getTopWorstAssets() {
+                        if (this.dataView !== 'assets' || !this.filteredAssets.length) return [];
+                        
+                        const map = new Map();
+                        this.filteredAssets.forEach(a => {
+                            const baseG = this.getGuaranteeHours(a.Mes_Referencia);
+                            const currentIdle = Math.max(0, baseG - (parseFloat(a.HorasTrabalhadas) || 0));
+                            const cost = currentIdle * (parseFloat(a.ValorHora) || 0);
+                            
+                            if (!map.has(a.AL)) {
+                                map.set(a.AL, { ...a, _idleCost: 0, _idleHours: 0 });
+                            }
+                            const entry = map.get(a.AL);
+                            entry._idleCost += cost;
+                            entry._idleHours += currentIdle;
+                        });
+
+                        return Array.from(map.values())
+                            .filter(a => a._idleCost > 0 || a._idleHours > 0)
+                            .sort((a, b) => {
+                                if (b._idleCost !== a._idleCost) return b._idleCost - a._idleCost;
+                                return b._idleHours - a._idleHours;
+                            });
+                    },
+                    exportDemobilizationReport() {
+                        const worstAssets = this.getTopWorstAssets;
+                        if (!worstAssets.length) {
+                            alert("Não há ativos com prejuízo de ociosidade no período selecionado.");
+                            return;
+                        }
+                        
+                        let csv = "RELATORIO EXECUTIVO DE DESMOBILIZACAO\n";
+                        csv += `Data de Referencia,${new Date().toLocaleDateString('pt-BR')}\n`;
+                        csv += `Prejuizo Total (Frota),R$ ${this.fleetSizingSummary.idleCost.toFixed(2)}\n`;
+                        csv += `Economia Projetada (6 meses),R$ ${(this.fleetSizingSummary.idleCost * 6).toFixed(2)}\n\n`;
+                        
+                        csv += "TOP 5 ATIVOS PARA DEVOLUCAO\n";
+                        csv += "Prefixo,Modelo,Familia,Horas Ociosas/Mes,Prejuizo Mensal\n";
+                        
+                        worstAssets.forEach(a => {
+                            const fam = this.getAssetEquipmentGroup(a) || '-';
+                            csv += `${a.AL},"${a.Modelo || '-'}",${fam},${a._idleHours.toFixed(1)}h,"R$ ${a._idleCost.toFixed(2)}"\n`;
+                        });
+                        
+                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement("a");
+                        const url = URL.createObjectURL(blob);
+                        link.setAttribute("href", url);
+                        link.setAttribute("download", `Relatorio_Corte_${new Date().getTime()}.csv`);
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    },
                     get getFleetSizingMetrics() {
                         if (this.dataView !== 'assets' || !this.filteredAssets.length) return [];
                         const map = new Map();
@@ -2544,6 +2954,12 @@
                                 if (this.currentView === 'overview') return true;
                                 const obraNum = this.currentView.replace(/[^0-9]/g, '');
                                 return (a.Obra || '').toString().includes(obraNum);
+                            })
+                            .filter(a => {
+                                if (!this.assetFilters.al) return true;
+                                const search = this.assetFilters.al.toLowerCase();
+                                const al = (a.AL || a.al || '').toString().toLowerCase();
+                                return al.includes(search);
                             })
                             .filter(a => this.assetFilters.equipment === 'all' || this.getAssetEquipmentGroup(a) === this.assetFilters.equipment)
                             .filter(a => this.assetFilters.company === 'all' || this.formatAssetCompany(a) === this.assetFilters.company)
@@ -3397,7 +3813,7 @@
                             if (chartInstances.assetEvolution) chartInstances.assetEvolution.destroy();
                             if (chartInstances.maintenanceCause) chartInstances.maintenanceCause.destroy();
                             if (chartInstances.fleetSizing) chartInstances.fleetSizing.destroy();
-                            if (chartInstances.partnerEfficiency) chartInstances.partnerEfficiency.destroy();
+
 
                             const assetFamilyCanvas = document.getElementById('assetFamilyChart');
                             const individualAssetCanvas = document.getElementById('individualAssetChart');
@@ -3405,7 +3821,7 @@
                             const disponibilidadeCanvas = document.getElementById('disponibilidadeChart');
                             const maintenanceCauseCanvas = document.getElementById('maintenanceCauseChart');
                             const fleetSizingCanvas = document.getElementById('fleetSizingChart');
-                            const partnerEfficiencyCanvas = document.getElementById('partnerEfficiencyChart');
+
 
                             const glassTooltip = {
                                 backgroundColor: 'rgba(15, 23, 42, 0.8)', titleColor: '#fff', bodyColor: '#cbd5e1',
@@ -3628,6 +4044,16 @@
                                         indexAxis: 'y',
                                         responsive: true,
                                         maintainAspectRatio: false,
+                                        onClick: (event, elements) => {
+                                            if (elements && elements.length > 0) {
+                                                const index = elements[0].index;
+                                                const family = metrics[index].family;
+                                                this.openOEEDrilldown(family);
+                                            }
+                                        },
+                                        onHover: (event, chartElement) => {
+                                            event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                                        },
                                         scales: {
                                             x: { 
                                                 stacked: true, 
@@ -3683,9 +4109,9 @@
                                             datasets: [{
                                                 data: [globalSummary.desgaste, globalSummary.falha, globalSummary.outros],
                                                 backgroundColor: [
-                                                    'rgba(6, 182, 212, 0.8)', // Ciano
-                                                    'rgba(234, 88, 12, 0.8)', // Laranja
-                                                    'rgba(71, 85, 105, 0.8)'  // Slate
+                                                    'rgba(244, 63, 94, 0.9)', // Rose (Desgaste)
+                                                    'rgba(139, 92, 246, 0.9)', // Violet (Falha)
+                                                    'rgba(234, 179, 8, 0.9)'  // Amber (Outras)
                                                 ],
                                                 borderColor: 'rgba(255, 255, 255, 0.1)',
                                                 borderWidth: 2,
@@ -3704,7 +4130,17 @@
                                                         label: (ctx) => {
                                                             const val = ctx.raw;
                                                             const pct = ((val / totalHours) * 100).toFixed(1) + '%';
-                                                            return `${ctx.label}: ${val.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h (${pct})`;
+                                                            const idx = ctx.dataIndex;
+                                                            let count = 0, money = 0;
+                                                            if (idx === 0) { count = globalSummary.countDesgaste; money = globalSummary.valDesgaste; }
+                                                            else if (idx === 1) { count = globalSummary.countFalha; money = globalSummary.valFalha; }
+                                                            else { count = globalSummary.countOutros; money = globalSummary.valOutros; }
+                                                            
+                                                            return [
+                                                                `${ctx.label}: ${val.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h (${pct})`,
+                                                                `Máquinas Afetadas: ${count}`,
+                                                                `Impacto Financeiro: R$ ${money.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                                                            ];
                                                         }
                                                     }
                                                 },
@@ -3716,8 +4152,44 @@
                                                         return pct > 5 ? pct + '%' : '';
                                                     }
                                                 }
+                                            },
+                                            onClick: (event, elements) => {
+                                                if (elements && elements.length > 0) {
+                                                    const idx = elements[0].index;
+                                                    const categoryLabel = ['DESGASTE', 'FALHA', 'OUTROS'][idx];
+                                                    this.openMaintenanceDrilldown(categoryLabel);
+                                                }
                                             }
-                                        }
+                                        },
+                                        plugins: [{
+                                            id: 'centerText',
+                                            afterDraw: (chart) => {
+                                                const { ctx, chartArea: { left, top, right, bottom } } = chart;
+                                                ctx.save();
+                                                const centerX = (left + right) / 2;
+                                                const centerY = (top + bottom) / 2;
+                                                
+                                                ctx.textAlign = 'center';
+                                                ctx.textBaseline = 'middle';
+                                                
+                                                // Quantidade de Equipamentos
+                                                ctx.font = 'bold 22px Inter, sans-serif';
+                                                ctx.fillStyle = '#fff';
+                                                ctx.fillText(globalSummary.totalEquipments, centerX, centerY - 10);
+                                                
+                                                // Label "Equipamentos"
+                                                ctx.font = 'bold 9px Inter, sans-serif';
+                                                ctx.fillStyle = '#94a3b8';
+                                                ctx.fillText('MÁQUINAS', centerX, centerY + 10);
+                                                
+                                                // Total de Horas (opcional, pequeno embaixo)
+                                                ctx.font = 'bold 8px Inter, sans-serif';
+                                                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                                                ctx.fillText(Math.round(totalHours).toLocaleString('pt-BR') + 'h TOTAL', centerX, centerY + 22);
+                                                
+                                                ctx.restore();
+                                            }
+                                        }]
                                     });
                                 }
 
@@ -3726,23 +4198,23 @@
                                 chartInstances.maintenanceCause = new Chart(maintenanceCauseCanvas, {
                                     type: 'bar',
                                     data: {
-                                        labels: metrics.map(m => m.family),
+                                        labels: metrics.map(m => `${m.family} (${m.count})`),
                                         datasets: [
                                             {
                                                 label: 'Desgaste Natural',
                                                 data: metrics.map(m => m.desgaste),
-                                                backgroundColor: 'rgba(6, 182, 212, 0.7)',
+                                                backgroundColor: 'rgba(244, 63, 94, 0.85)', // Rose
                                                 borderRadius: { topLeft: 4, bottomLeft: 4 }
                                             },
                                             {
                                                 label: 'Falha Operação',
                                                 data: metrics.map(m => m.falha),
-                                                backgroundColor: 'rgba(234, 88, 12, 0.7)'
+                                                backgroundColor: 'rgba(139, 92, 246, 0.85)' // Violet
                                             },
                                             {
                                                 label: 'Outras Causas',
                                                 data: metrics.map(m => m.outros),
-                                                backgroundColor: 'rgba(71, 85, 105, 0.7)',
+                                                backgroundColor: 'rgba(234, 179, 8, 0.85)', // Amber
                                                 borderRadius: { topRight: 4, bottomRight: 4 }
                                             }
                                         ]
@@ -3757,8 +4229,10 @@
                                         onClick: (event, elements) => {
                                             if (elements && elements.length > 0) {
                                                 const index = elements[0].index;
-                                                const family = metrics[index].family || metrics[index].name;
-                                                this.openFamilyDrilldown(family);
+                                                const datasetIndex = elements[0].datasetIndex;
+                                                const family = metrics[index].family;
+                                                const category = ['DESGASTE', 'FALHA', 'OUTROS'][datasetIndex];
+                                                this.openMaintenanceDrilldown(category, family);
                                             }
                                         },
                                         interaction: { mode: 'index', intersect: false },
@@ -3934,106 +4408,6 @@
                                                 font: { weight: 'bold', size: 9 },
                                                 formatter: v => v > 0 ? v : ''
                                             }
-                                        }
-                                    }
-                                });
-                            }
-
-                            if (partnerEfficiencyCanvas) {
-                                const metrics = this.getEfficiencyByPartnerMetrics;
-                                const ctx = partnerEfficiencyCanvas.getContext('2d');
-                                chartInstances.partnerEfficiency = new Chart(ctx, {
-                                    type: 'bar',
-                                    data: {
-                                        labels: metrics.map(m => m.name),
-                                        datasets: [
-                                            {
-                                                label: 'Horas Trabalhadas',
-                                                data: metrics.map(m => m.worked),
-                                                backgroundColor: 'rgba(16, 185, 129, 0.6)',
-                                                borderRadius: 4,
-                                                yAxisID: 'y',
-                                                order: 2
-                                            },
-                                            {
-                                                label: 'Horas em Garantia',
-                                                data: metrics.map(m => m.guarantee),
-                                                backgroundColor: 'rgba(244, 63, 94, 0.6)',
-                                                borderRadius: 4,
-                                                yAxisID: 'y',
-                                                order: 2
-                                            }
-                                        ]
-                                    },
-                                    options: {
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        scales: {
-                                            x: { stacked: true, grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-                                            y: { 
-                                                stacked: true, 
-                                                title: { display: true, text: 'Volume de Horas', color: '#64748b' },
-                                                ticks: { color: '#94a3b8' }, 
-                                                grid: { color: 'rgba(255,255,255,0.05)' } 
-                                            }
-                                        },
-                                        interaction: { mode: 'index', intersect: false },
-                                        onHover: (event, chartElement) => {
-                                            event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
-                                        },
-                                        onClick: (event, elements) => {
-                                            if (elements && elements.length > 0) {
-                                                const index = elements[0].index;
-                                                const partnerName = metrics[index].name;
-                                                this.openPartnerDrilldown(partnerName);
-                                            }
-                                        },
-                                        plugins: {
-                                            legend: { position: 'top', labels: { color: '#94a3b8', usePointStyle: true, padding: 20 } },
-                                            tooltip: {
-                                                ...glassTooltip,
-                                                callbacks: {
-                                                    label: (ctx) => {
-                                                        const label = ctx.dataset.label;
-                                                        const val = ctx.raw;
-                                                        return label + ': ' + (typeof val === 'number' ? val.toFixed(1) : val) + 'h';
-                                                    },
-                                                    footer: (items) => {
-                                                        const idx = items[0].dataIndex;
-                                                        const m = metrics[idx];
-                                                        const partnerAssets = this.filteredAssets.filter(a => this.normalizeCompanyName(a.Empresa) === m.name);
-                                                        
-                                                        const totals = partnerAssets.reduce((acc, a) => {
-                                                            const vH = parseFloat(a.ValorHora) || 0;
-                                                            const hT = parseFloat(a.HorasTrabalhadas) || 0;
-                                                            const hG = Math.max(0, this.getGuaranteeHours(a.Mes_Referencia) - hT);
-                                                            acc.vT += hT * vH;
-                                                            acc.vG += hG * vH;
-                                                            
-                                                            if (a.Descontos && Array.isArray(a.Descontos)) {
-                                                                a.Descontos.forEach(d => {
-                                                                    if (String(d.responsavel).includes('FORNECEDOR')) acc.vD += d.valor;
-                                                                });
-                                                            }
-                                                            return acc;
-                                                        }, { vT: 0, vG: 0, vD: 0 });
-
-                                                        const lines = [
-                                                            '',
-                                                            'VALOR TRABALHADO: ' + this.formatCurrency(totals.vT),
-                                                            'VALOR GARANTIA: ' + this.formatCurrency(totals.vG)
-                                                        ];
-                                                        
-                                                        if (totals.vD > 0) {
-                                                            lines.push('DESCONTOS (Forn.): -' + this.formatCurrency(totals.vD));
-                                                        }
-                                                        
-                                                        lines.push('TOTAL MEDIDO: ' + this.formatCurrency(totals.vT + totals.vG - totals.vD));
-                                                        return lines;
-                                                    }
-                                                }
-                                            },
-                                            datalabels: { display: false }
                                         }
                                     }
                                 });
