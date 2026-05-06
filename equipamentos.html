@@ -423,12 +423,12 @@
                                         get stats() {
                                             if (!drilldown.selectedAsset) return { w:0, g:0, m:0, costW:0, costG:0, total:0 };
                                             const al = drilldown.selectedAsset.AL || drilldown.selectedAsset.al;
-                                            const items = assets.filter(a => (a.AL || a.al) === al);
+                                            const items = assets.filter(a => (a.AL || a.al) === al && (a.Mes_Referencia || '').includes('/26'));
                                             const w = items.reduce((acc, a) => acc + (parseFloat(a.HorasTrabalhadas) || 0), 0);
-                                            const g = items.reduce((acc, a) => acc + this.getAssetIdleHours(a), 0);
+                                            const g = items.reduce((acc, a) => acc + Math.max(0, getGuaranteeHours(a.Mes_Referencia, a) - (parseFloat(a.HorasTrabalhadas) || 0)), 0);
                                             const m = items.reduce((acc, a) => acc + (parseFloat(a.TempoManutencao) || 0), 0);
                                             const costW = items.reduce((acc, a) => acc + ((parseFloat(a.HorasTrabalhadas) || 0) * (parseFloat(a.ValorHora) || 0)), 0);
-                                            const costG = items.reduce((acc, a) => acc + (this.getAssetIdleHours(a) * (parseFloat(a.ValorHora) || 0)), 0);
+                                            const costG = items.reduce((acc, a) => acc + (getAssetIdleHours(a) * (parseFloat(a.ValorHora) || 0)), 0);
                                             const base = Math.max(1, w + g);
                                             return { w, g, m, costW, costG, total: costW + costG, pW: (w/base*100).toFixed(1), pG: (g/base*100).toFixed(1) };
                                         }
@@ -478,7 +478,7 @@
                                          <div>
                                             <p class="text-emerald-400 font-bold text-xs mb-1">Status de Disponibilidade</p>
                                             <p class="text-slate-300 text-[10px]">Este ativo operou <b class="text-white" x-text="drilldown.selectedAsset ? (((parseFloat(drilldown.selectedAsset.HorasTrabalhadas) || 0) / Math.max(1, getGuaranteeHours(drilldown.selectedAsset.Mes_Referencia, drilldown.selectedAsset)))*100).toFixed(1) + '%' : '0%'"></b> da carga nominal (<span x-text="drilldown.selectedAsset ? getGuaranteeHours(drilldown.selectedAsset.Mes_Referencia, drilldown.selectedAsset) + 'h' : '200h'"></span>) neste mês.</p>
-                                            <p class="text-slate-400 text-[9px] mt-1.5 font-bold uppercase tracking-widest" x-text="drilldown.selectedAsset ? 'Acumulado: ' + Math.round(assets.filter(a => (a.AL || a.al) === (drilldown.selectedAsset.AL || drilldown.selectedAsset.al)).reduce((acc, a) => acc + (parseFloat(a.HorasTrabalhadas) || 0), 0)) + 'h Trabalhadas | ' + Math.round(assets.filter(a => (a.AL || a.al) === (drilldown.selectedAsset.AL || drilldown.selectedAsset.al)).reduce((acc, a) => acc + this.getAssetIdleHours(a), 0)) + 'h Garantia' : ''"></p>
+                                            <p class="text-slate-400 text-[9px] mt-1.5 font-bold uppercase tracking-widest" x-text="drilldown.selectedAsset ? 'Acumulado: ' + Math.round(assets.filter(a => (a.AL || a.al) === (drilldown.selectedAsset.AL || drilldown.selectedAsset.al)).reduce((acc, a) => acc + (parseFloat(a.HorasTrabalhadas) || 0), 0)) + 'h Trabalhadas | ' + Math.round(assets.filter(a => (a.AL || a.al) === (drilldown.selectedAsset.AL || drilldown.selectedAsset.al)).reduce((acc, a) => acc + Math.max(0, getGuaranteeHours(a.Mes_Referencia, a) - (parseFloat(a.HorasTrabalhadas) || 0)), 0)) + 'h Garantia' : ''"></p>
                                          </div>
                                          <button @click="drilldown.type = 'family'; drilldown.selectedAsset = null; drilldown.title = 'Detalhamento: ' + drilldown.selectedFamily" 
                                                  class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-500/10 text-sky-400 text-[9px] font-black uppercase hover:bg-sky-500 hover:text-white transition-all">
@@ -493,7 +493,7 @@
                                                   const al = drilldown.selectedAsset.AL || drilldown.selectedAsset.al;
                                                   // Deduplicate by Mes_Referencia
                                                   const histMap = new Map();
-                                                  assets.filter(a => (a.AL || a.al) === al).forEach(a => {
+                                                  assets.filter(a => (a.AL || a.al) === al && (a.Mes_Referencia || '').includes('/26')).forEach(a => {
                                                       if(!histMap.has(a.Mes_Referencia)) histMap.set(a.Mes_Referencia, a);
                                                   });
                                                   const hist = Array.from(histMap.values()).sort((a,b) => parseMesAno(a.Mes_Referencia) - parseMesAno(b.Mes_Referencia));
@@ -742,7 +742,7 @@
                 </div>
                 <div class="glass p-4 rounded-2xl animate-fade-in card-gradient overflow-hidden relative">
                     <p class="text-slate-400 text-[10px] font-medium mb-1 uppercase tracking-wide">Horas em Garantia</p>
-                    <h3 class="text-2xl font-black text-white" x-text="filteredAssets.reduce((sum, a) => sum + this.getAssetIdleHours(a), 0).toLocaleString('pt-BR', {maximumFractionDigits:1}) + 'h'"></h3>
+                    <h3 class="text-2xl font-black text-white" x-text="filteredAssets.reduce((sum, a) => sum + Math.max(0, getGuaranteeHours(a.Mes_Referencia, a) - (parseFloat(a.HorasTrabalhadas) || 0)), 0).toLocaleString('pt-BR', {maximumFractionDigits:1}) + 'h'"></h3>
                 </div>
             </div>
 
@@ -1044,7 +1044,7 @@
             <!-- Detalhe por Família (Barras Horizontais Empilhadas) -->
             <div class="glass p-4 rounded-2xl animate-fade-in relative lg:col-span-3">
                 <div class="flex items-center gap-2 mb-4">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Manutenção: Métricas por Família (Horas Totais)</h3>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Manutenção: Métricas por Família (%)</h3>
                     <div class="group relative">
                         <div class="w-5 h-5 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center cursor-help hover:bg-sky-500/20 transition-all">
                             <i class="fas fa-info text-[10px] text-sky-400"></i>
@@ -1059,6 +1059,26 @@
                 </div>
             </div>
         </div>
+
+        <div class="grid grid-cols-1 gap-4 mb-6" x-show="dataView === 'assets'" x-cloak>
+            <div class="glass p-4 rounded-2xl animate-fade-in relative">
+                <div class="flex items-center gap-2 mb-4">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Resumo de Equipamentos por Família de Cada Obra</h3>
+                    <div class="group relative">
+                        <div class="w-5 h-5 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center cursor-help hover:bg-sky-500/20 transition-all">
+                            <i class="fas fa-info text-[10px] text-sky-400"></i>
+                        </div>
+                        <div class="absolute z-50 left-0 top-7 w-72 p-4 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 text-[11px] leading-relaxed text-slate-300 translate-y-2 group-hover:translate-y-0">
+                            <p>Distribuição do quantitativo de máquinas por família, separadas por obra. Exibe a contagem de prefixos únicos encontrados na visão atual.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="h-[300px] sm:h-[400px]">
+                    <canvas id="assetFamilyBySiteChart"></canvas>
+                </div>
+            </div>
+        </div>
+
     </div>
 
         <!-- Floating Filters Bar  (Retrátil) -->
@@ -1375,7 +1395,7 @@
                                 <td class="px-4 py-3 text-[11px] text-slate-100" x-text="asset.Modelo || '-'">-</td>
                                 <td class="px-4 py-3 text-right text-[11px] text-slate-100" x-text="(parseFloat(asset.HorasTrabalhadas) || 0).toLocaleString('pt-BR', {maximumFractionDigits: 1})">0</td>
                                 <td class="px-4 py-3 text-right text-[11px] text-slate-300 font-mono" :class="(asset.horasImprodutivas > 20) ? 'text-rose-400 font-bold' : ''" x-text="(parseFloat(asset.horasImprodutivas) || 0).toLocaleString('pt-BR', {maximumFractionDigits: 1})">0</td>
-                                <td class="px-4 py-3 text-right text-[11px] text-slate-100" x-text="this.getAssetIdleHours(asset).toLocaleString('pt-BR', {maximumFractionDigits: 1})">0</td>
+                                <td class="px-4 py-3 text-right text-[11px] text-slate-100" x-text="Math.max(0, getGuaranteeHours(asset.Mes_Referencia, asset) - (parseFloat(asset.HorasTrabalhadas) || 0)).toLocaleString('pt-BR', {maximumFractionDigits: 1})">0</td>
                                 <td class="px-4 py-3 text-right text-[11px] text-sky-400 font-black" x-text="getGuaranteeHours(asset.Mes_Referencia, asset) + 'h'"></td>
                                 <td class="px-4 py-3 text-right text-[11px] text-slate-100" x-text="(parseFloat(asset.TempoManutencao) || 0).toLocaleString('pt-BR', {maximumFractionDigits: 1})">0</td>
                                 <td class="px-4 py-3 text-[11px] text-slate-100 whitespace-nowrap" x-text="asset.Responsabilidade || '-'">-</td>
@@ -1857,7 +1877,7 @@
                         </div>
                         <div class="glass p-5 rounded-3xl border border-white/5 bg-white/[0.02]">
                             <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Improdutividade (Média)</p>
-                            <p class="text-2xl font-black text-amber-400" x-text="selectedIndividualAsset ? (assets.filter(a => a.AL === selectedIndividualAsset.AL).reduce((acc, a) => acc + (parseFloat(a.HorasImprodutivas)||0), 0) / assets.filter(a => a.AL === selectedIndividualAsset.AL).length).toLocaleString('pt-BR', {maximumFractionDigits:1}) + 'h' : '0h'"></p>
+                            <p class="text-2xl font-black text-amber-400" x-text="selectedIndividualAsset ? (assets.filter(a => a.AL === selectedIndividualAsset.AL).reduce((acc, a) => acc + (parseFloat(a.horasImprodutivas)||0), 0) / assets.filter(a => a.AL === selectedIndividualAsset.AL).length).toLocaleString('pt-BR', {maximumFractionDigits:1}) + 'h' : '0h'"></p>
                         </div>
                         <div class="glass p-5 rounded-3xl border border-white/5 bg-white/[0.02]">
                             <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Manutenção (Total Dias)</p>
@@ -1997,8 +2017,8 @@
                             }
                         }
                         if (!monthRef || monthRef === 'all') return base;
-                        // Período de chuva acordado: Nov/25 a Mar/26
-                        const rainyPeriods = ['NOV/25', 'DEZ/25', 'JAN/26', 'FEV/26', 'MAR/26'];
+                        // Período de chuva acordado: Nov a Mar
+                        const rainyPeriods = ['NOV/24', 'DEZ/24', 'JAN/25', 'FEV/25', 'MAR/25', 'NOV/25', 'DEZ/25', 'JAN/26', 'FEV/26', 'MAR/26', 'NOV/26', 'DEZ/26', 'JAN/27', 'FEV/27', 'MAR/27'];
                         const upperRef = monthRef.toUpperCase();
                         if (upperRef.includes('ABR/26')) {
                             // Ciclo de medição costuma ser do dia 21 ao dia 20. 
@@ -2012,11 +2032,20 @@
                         if (!asset) return 0;
                         const base = this.getGuaranteeHours(asset.Mes_Referencia, asset);
                         const worked = parseFloat(asset.HorasTrabalhadas) || 0;
+                        
+                        // O TempoDesgaste representa especificamente a parcela de responsabilidade do fornecedor (desgaste natural)
+                        const wearTime = parseFloat(asset.TempoDesgaste) || 0;
                         const maintenance = parseFloat(asset.TempoManutencao) || 0;
                         const resp = (asset.Responsabilidade || '').toString().toUpperCase();
                         
-                        // Se a manutenção for responsabilidade do fornecedor, descontamos essas horas da garantia
-                        const deduction = (resp.includes('FORNECEDOR') || resp.includes('LOCADORA')) ? maintenance : 0;
+                        let deduction = 0;
+                        if (wearTime > 0) {
+                            // Se tiver o TempoDesgaste especificado, usamos ele diretamente como desconto do fornecedor
+                            deduction = wearTime;
+                        } else if (resp.includes('FORNECEDOR') || resp.includes('LOCADORA')) {
+                            // Caso contrário, se a responsabilidade for do fornecedor, usamos a manutenção total
+                            deduction = maintenance;
+                        }
                         
                         return Math.max(0, base - worked - deduction);
                     },
@@ -2315,7 +2344,7 @@
                         const assets = this.drilldownAssets;
                         const metrics = assets.reduce((acc, a) => {
                             const hT = parseFloat(a.HorasTrabalhadas) || 0;
-                            const hG = this.getAssetIdleHours(a);
+                            const hG = Math.max(0, this.getGuaranteeHours(a.Mes_Referencia, a) - hT);
                             
                             acc.workedHours += hT;
                             acc.idleHours += hG;
@@ -2563,13 +2592,8 @@
                         this.previstoData = this.previstoData.map((row, i) => normalizer(row, `P${i}`));
 
                         this.monthColumns = Object.keys(this.data[0] || {})
-                            .filter(k => /^[A-Z]{3}\/\d{2}$/.test(k))
-                            .sort((a, b) => {
-                                const [mA, yA] = a.split('/');
-                                const [mB, yB] = b.split('/');
-                                if (yA !== yB) return yA - yB;
-                                return months.indexOf(mA) - months.indexOf(mB);
-                            });
+                            .filter(k => /^[A-Z]{3}\/26$/.test(k))
+                            .sort((a, b) => this.parseMesAno(a) - this.parseMesAno(b));
                     },
 
                     handleFileUpload(event) {
@@ -2609,7 +2633,7 @@
                     },
 
                     get uniqueAssetMonths() {
-                        return [...new Set(this.assets.map(a => a.Mes_Referencia).filter(v => v && v !== '-'))]
+                        return [...new Set(this.assets.map(a => a.Mes_Referencia).filter(v => v && v !== '-' && v.includes('/26')))]
                             .sort((a,b) => {
                                 const m1 = a.split('/'); const m2 = b.split('/');
                                 const nm1 = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'].indexOf(m1[0]);
@@ -2649,11 +2673,61 @@
                             m.als.add(a.AL);
                             m.count = m.als.size;
                             const hT = parseFloat(a.HorasTrabalhadas) || 0;
-                            const hG = this.getAssetIdleHours(a);
+                            const hG = Math.max(0, this.getGuaranteeHours(a.Mes_Referencia, a) - hT);
                             m.horasT += hT;
                             m.horasG += hG;
                         }
                         return Array.from(map.values()).sort((a, b) => b.horasT - a.horasT);
+                    },
+
+                    get getAssetFamilyBySiteMetrics() {
+                        if (this.dataView !== 'assets' || !this.filteredAssets.length) return { labels: [], datasets: [] };
+                        const familyMap = new Map();
+                        const obrasSet = new Set();
+                        
+                        for (const a of this.filteredAssets) {
+                            const fam = this.getAssetEquipmentGroup(a) || '-';
+                            const obra = this.cleanInlineText(a.Obra || '-');
+                            const al = a.AL || a.al;
+                            
+                            obrasSet.add(obra);
+                            
+                            if (!familyMap.has(fam)) familyMap.set(fam, new Map());
+                            const obraMap = familyMap.get(fam);
+                            
+                            if (!obraMap.has(obra)) obraMap.set(obra, new Set());
+                            obraMap.get(obra).add(al);
+                        }
+                        
+                        const families = Array.from(familyMap.entries()).map(([fam, obraMap]) => {
+                            let total = 0;
+                            obraMap.forEach(set => total += set.size);
+                            return { fam, obraMap, total };
+                        }).sort((a, b) => b.total - a.total);
+                        
+                        const labels = families.map(f => f.fam);
+                        const obras = Array.from(obrasSet).sort();
+                        
+                        const colors = [
+                            'rgba(14, 165, 233, 0.8)', // sky-500
+                            'rgba(244, 63, 94, 0.8)', // rose-500
+                            'rgba(16, 185, 129, 0.8)', // emerald-500
+                            'rgba(245, 158, 11, 0.8)', // amber-500
+                            'rgba(139, 92, 246, 0.8)'  // violet-500
+                        ];
+                        
+                        const datasets = obras.map((obra, i) => {
+                            const dataArray = families.map(f => f.obraMap.has(obra) ? f.obraMap.get(obra).size : 0);
+                            const totalObra = dataArray.reduce((acc, curr) => acc + curr, 0);
+                            return {
+                                label: `${obra} - Total: ${totalObra}`,
+                                data: dataArray,
+                                backgroundColor: colors[i % colors.length],
+                                borderRadius: 4
+                            };
+                        });
+                        
+                        return { labels, datasets };
                     },
 
                     get getIndividualAssetMetrics() {
@@ -2665,7 +2739,7 @@
                             if (!map.has(al)) map.set(al, { al: al, family: family, horasT: 0, horasG: 0 });
                             const m = map.get(al);
                             const hT = parseFloat(a.HorasTrabalhadas) || 0;
-                            const hG = this.getAssetIdleHours(a);
+                            const hG = Math.max(0, this.getGuaranteeHours(a.Mes_Referencia, a) - hT);
                             m.horasT += hT;
                             m.horasG += hG;
                         }
@@ -2986,12 +3060,17 @@
                             .filter(a => this.assetFilters.company === 'all' || this.formatAssetCompany(a) === this.assetFilters.company)
                             .filter(a => this.assetFilters.work === 'all' || this.cleanInlineText(a.Obra || '-') === this.assetFilters.work)
                             .filter(a => this.assetFilters.status === 'all' || this.formatAssetStatus(a) === this.assetFilters.status)
-                            .filter(a => this.assetFilters.category === 'all' || (a.Categoria || '').toUpperCase() === (this.assetFilters.category || 'all').toUpperCase());
+                            .filter(a => {
+                                if (this.assetFilters.category === 'all') return true;
+                                const normA = (a.Categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                                const normF = this.assetFilters.category.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                                return normA === normF;
+                            });
 
                         return months.map(m => {
                             const filtered = filteredBase.filter(a => a.Mes_Referencia === m && this.isAssetMobilized(a));
                             const hT = filtered.reduce((sum, a) => sum + (parseFloat(a.HorasTrabalhadas)||0), 0);
-                            const hG = filtered.reduce((sum, a) => sum + this.getAssetIdleHours(a), 0);
+                            const hG = filtered.reduce((sum, a) => sum + Math.max(0, this.getGuaranteeHours(a.Mes_Referencia, a) - (parseFloat(a.HorasTrabalhadas)||0)), 0);
                             return {
                                 month: m,
                                 horasT: hT,
@@ -3027,7 +3106,7 @@
                             .filter(a => {
                                 if (this.assetFilters.month === 'all') {
                                     a.horasImprodutivas = 0;
-                                    return true;
+                                    return (a.Mes_Referencia || '').includes('/26');
                                 }
                                 const targetMonth = this.assetFilters.month;
                                 let isVisible = (a.Mes_Referencia === targetMonth);
@@ -3861,6 +3940,7 @@
 
                             // Limpeza de instâncias anteriores para garantir reatividade dos filtros
                             if (chartInstances.assetFamily) chartInstances.assetFamily.destroy();
+                            if (chartInstances.assetFamilyBySite) chartInstances.assetFamilyBySite.destroy();
                             if (chartInstances.individualAsset) chartInstances.individualAsset.destroy();
                             if (chartInstances.disponibilidade) chartInstances.disponibilidade.destroy();
                             if (chartInstances.assetEvolution) chartInstances.assetEvolution.destroy();
@@ -3869,6 +3949,7 @@
 
 
                             const assetFamilyCanvas = document.getElementById('assetFamilyChart');
+                            const assetFamilyBySiteCanvas = document.getElementById('assetFamilyBySiteChart');
                             const individualAssetCanvas = document.getElementById('individualAssetChart');
                             const assetEvolutionCanvas = document.getElementById('assetEvolutionChart');
                             const disponibilidadeCanvas = document.getElementById('disponibilidadeChart');
@@ -3936,6 +4017,55 @@
                                     ctx.restore();
                                 }
                             };
+
+                            if (assetFamilyBySiteCanvas) {
+                                const ctx = assetFamilyBySiteCanvas.getContext('2d'), metrics = this.getAssetFamilyBySiteMetrics;
+                                chartInstances.assetFamilyBySite = new Chart(ctx, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: metrics.labels,
+                                        datasets: metrics.datasets
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        interaction: { mode: 'index', intersect: false },
+                                        scales: { 
+                                            x: { stacked: false, grid: { display: false } }, 
+                                            y: { stacked: false, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { stepSize: 1 } } 
+                                        },
+                                        plugins: {
+                                            legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 10, weight: 'bold' }, usePointStyle: true } },
+                                            tooltip: { 
+                                                ...glassTooltip,
+                                                callbacks: {
+                                                    label: (context) => {
+                                                        const dataset = context.dataset.data;
+                                                        const total = dataset.reduce((a, b) => a + b, 0);
+                                                        const percent = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                                                        return `${context.dataset.label}: ${context.raw} maq. (${percent}%)`;
+                                                    }
+                                                }
+                                            },
+                                            datalabels: {
+                                                color: '#fff',
+                                                font: { weight: 'bold', size: 9 },
+                                                anchor: 'end',
+                                                align: 'top',
+                                                formatter: (val, ctx) => {
+                                                    if (val > 0) {
+                                                        const dataset = ctx.dataset.data;
+                                                        const total = dataset.reduce((a, b) => a + b, 0);
+                                                        const percent = total > 0 ? Math.round((val / total) * 100) : 0;
+                                                        return `${val} (${percent}%)`;
+                                                    }
+                                                    return '';
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
+                            }
 
                             if (assetFamilyCanvas) {
                                 const ctx = assetFamilyCanvas.getContext('2d'), metrics = this.getAssetFamilyMetrics;
@@ -4255,18 +4385,18 @@
                                         datasets: [
                                             {
                                                 label: 'Desgaste Natural',
-                                                data: metrics.map(m => m.desgaste),
+                                                data: metrics.map(m => (m.desgaste / (m.desgaste + m.falha + m.outros) * 100)),
                                                 backgroundColor: 'rgba(244, 63, 94, 0.85)', // Rose
                                                 borderRadius: { topLeft: 4, bottomLeft: 4 }
                                             },
                                             {
                                                 label: 'Falha Operação',
-                                                data: metrics.map(m => m.falha),
+                                                data: metrics.map(m => (m.falha / (m.desgaste + m.falha + m.outros) * 100)),
                                                 backgroundColor: 'rgba(139, 92, 246, 0.85)' // Violet
                                             },
                                             {
                                                 label: 'Outras Causas',
-                                                data: metrics.map(m => m.outros),
+                                                data: metrics.map(m => (m.outros / (m.desgaste + m.falha + m.outros) * 100)),
                                                 backgroundColor: 'rgba(234, 179, 8, 0.85)', // Amber
                                                 borderRadius: { topRight: 4, bottomRight: 4 }
                                             }
@@ -4290,7 +4420,15 @@
                                         },
                                         interaction: { mode: 'index', intersect: false },
                                         scales: {
-                                            x: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                                            x: { 
+                                                stacked: true, 
+                                                max: 100,
+                                                grid: { color: 'rgba(255,255,255,0.05)' }, 
+                                                ticks: { 
+                                                    color: '#64748b',
+                                                    callback: (val) => val + '%'
+                                                } 
+                                            },
                                             y: { stacked: true, grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: 'bold' } } }
                                         },
                                         plugins: {
@@ -4300,20 +4438,16 @@
                                                 callbacks: {
                                                     label: (ctx) => {
                                                         const m = metrics[ctx.dataIndex];
-                                                        const totalFam = m.desgaste + m.falha + m.outros;
-                                                        const pct = ((ctx.raw / totalFam) * 100).toFixed(1) + '%';
-                                                        return `${ctx.dataset.label}: ${ctx.raw.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h (${pct})`;
+                                                        const hours = ctx.datasetIndex === 0 ? m.desgaste : (ctx.datasetIndex === 1 ? m.falha : m.outros);
+                                                        return `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}% (${hours.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h)`;
                                                     }
                                                 }
                                             },
                                             datalabels: {
                                                 color: '#fff',
                                                 font: { weight: 'bold', size: 9 },
-                                                formatter: (val, ctx) => {
-                                                    const m = metrics[ctx.dataIndex];
-                                                    const totalFam = m.desgaste + m.falha + m.outros;
-                                                    const pct = (val / totalFam) * 100;
-                                                    return pct > 15 ? Math.round(val) + 'h' : '';
+                                                formatter: (val) => {
+                                                    return val > 12 ? val.toFixed(1) + '%' : '';
                                                 }
                                             }
                                         }
