@@ -974,15 +974,17 @@
 
 
 
-                    <button @click="drilldown.isOpen = false" class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all group border border-white/5">
-
-
-
-                        <svg class="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-
-
-
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <!-- Botão de Download Excel Unificado (Topo) -->
+                        <button @click="downloadExcelFromHeader()" 
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase tracking-wider transition-all border border-emerald-500/20 shadow-lg cursor-pointer">
+                            <i class="fas fa-file-excel text-xs"></i>
+                            Exportar Excel
+                        </button>
+                        <button @click="drilldown.isOpen = false" class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all group border border-white/5">
+                            <svg class="w-4 h-4 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
 
 
 
@@ -2127,6 +2129,11 @@
 
 
                                     </div>
+                                    <!-- Gráfico de Métricas Mensais (Preenchendo o Espaço em Branco no Lado Esquerdo) -->
+                                    <div class="h-[135px] relative border-t border-white/5 pt-3 mt-[35px]">
+                                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1 text-center">Métricas no Mês Selecionado (%)</p>
+                                        <canvas id="individualMonthlyAvailabilityChart"></canvas>
+                                    </div>
 
 
 
@@ -2257,6 +2264,7 @@
                                                        
 
                                                       const wearTime = parseFloat(h.TempoDesgaste) || 0; 
+                                                       const failTime = parseFloat(h.TempoFalha) || 0;
 
                                                       const mainTime = parseFloat(h.TempoManutencao) || 0; 
 
@@ -2278,17 +2286,46 @@
 
                                                        
 
-                                                      if (resp.includes('OBRA') || resp.includes('CLIENTE') || causa.includes('OPERA')) { 
-
-                                                          singleFalha += mainTime; 
-
-                                                      } 
+                                                       if (failTime > 0) { 
+                                                           singleFalha += failTime; 
+                                                       } else if (resp.includes('OBRA') || resp.includes('CLIENTE') || causa.includes('OPERA')) { 
+                                                           singleFalha += mainTime; 
+                                                       }
 
                                                   }); 
 
                                                    
 
                                                   const singleTotalHours = chartHist.length * 720 || 720; 
+
+                                                   // Métricas Mensais do Ativo Selecionado (Mês Selecionado)
+                                                   let singleDesgasteMonth = 0;
+                                                   let singleFalhaMonth = 0;
+                                                   let singleWorkedMonth = 0;
+                                                   let singleGuaranteeMonth = 0;
+                                                   if (drilldown.selectedAsset) {
+                                                       const h = drilldown.selectedAsset;
+                                                       singleWorkedMonth = parseFloat(h.HorasTrabalhadas) || 0;
+                                                       singleGuaranteeMonth = getGuaranteeHours(h.Mes_Referencia, h) || 200;
+                                                       const wearTime = parseFloat(h.TempoDesgaste) || 0;
+                                                        const mainTime = parseFloat(h.TempoManutencao) || 0;
+                                                        const failTime = parseFloat(h.TempoFalha) || 0;
+                                                        const resp = (h.Responsabilidade || '').toString().toUpperCase();
+                                                        const causa = (h.Causa || h.Causa_Manutencao || '').toString().toUpperCase();
+                                                        if (wearTime > 0) {
+                                                            singleDesgasteMonth = wearTime;
+                                                        } else if (resp.includes('FORNECEDOR') || resp.includes('LOCADORA')) {
+                                                            singleDesgasteMonth = mainTime;
+                                                        }
+                                                        if (failTime > 0) {
+                                                            singleFalhaMonth = failTime;
+                                                        } else if (resp.includes('OBRA') || resp.includes('CLIENTE') || causa.includes('OPERA')) {
+                                                            singleFalhaMonth = mainTime;
+                                                        }
+                                                   }
+                                                   const monthMechanical = Math.max(0, Math.min(100, (720 - singleDesgasteMonth) / 720 * 100));
+                                                   const monthPhysical = Math.max(0, Math.min(100, (720 - (singleDesgasteMonth + singleFalhaMonth)) / 720 * 100));
+                                                   const monthUtilization = Math.max(0, Math.min(100, (singleWorkedMonth / (singleGuaranteeMonth || 1) * 100)));
 
                                                   const singleMechanical = Math.max(0, Math.min(100, (singleTotalHours - singleDesgaste) / singleTotalHours * 100)); 
 
@@ -2354,121 +2391,125 @@
 
                                                        
 
-                                                      const availCtx = document.getElementById('individualAvailabilityChart'); 
+                                                       // 1. Inicializar Gráfico Mensal (Lado Esquerdo)
+                                                       const monthlyCtx = document.getElementById('individualMonthlyAvailabilityChart');
+                                                       if(monthlyCtx) {
+                                                           if(window.monthlyAvailChart) window.monthlyAvailChart.destroy();
+                                                           window.monthlyAvailChart = new Chart(monthlyCtx, {
+                                                               type: 'bar',
+                                                               data: {
+                                                                   labels: ['Disp. Mecânica', 'Disp. Física', 'Taxa Utilização'],
+                                                                   datasets: [{
+                                                                       data: [
+                                                                           monthMechanical.toFixed(1),
+                                                                           monthPhysical.toFixed(1),
+                                                                           monthUtilization.toFixed(1)
+                                                                       ],
+                                                                       backgroundColor: [
+                                                                           'rgba(56, 189, 248, 0.85)',
+                                                                           'rgba(45, 212, 191, 0.85)',
+                                                                           'rgba(16, 185, 129, 0.85)'
+                                                                       ],
+                                                                       borderColor: [
+                                                                           '#38bdf8',
+                                                                           '#2dd4bf',
+                                                                           '#10b981'
+                                                                       ],
+                                                                       borderWidth: 1.5,
+                                                                       borderRadius: 6
+                                                                   }]
+                                                               },
+                                                               options: {
+                                                                   indexAxis: 'y',
+                                                                   responsive: true,
+                                                                   maintainAspectRatio: false,
+                                                                   scales: {
+                                                                       x: {
+                                                                           min: 0, max: 100,
+                                                                           grid: { color: 'rgba(255,255,255,0.05)' },
+                                                                           ticks: { color: '#94a3b8', callback: v => v + '%' }
+                                                                       },
+                                                                       y: {
+                                                                           grid: { display: false },
+                                                                           ticks: { color: '#f1f5f9', font: { weight: 'bold', size: 9 } }
+                                                                       }
+                                                                   },
+                                                                   plugins: {
+                                                                       legend: { display: false },
+                                                                       tooltip: {
+                                                                           backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                                                                           callbacks: { label: (ctx) => ' ' + ctx.parsed.x.toFixed(1) + '%' }
+                                                                       },
+                                                                       datalabels: {
+                                                                           display: true,
+                                                                           color: '#fff',
+                                                                           font: { weight: 'bold', size: 8 },
+                                                                           formatter: v => v + '%'
+                                                                       }
+                                                                   }
+                                                               }
+                                                           });
+                                                       }
 
-                                                      if(availCtx) { 
-
-                                                          if(availChart) availChart.destroy(); 
-
-                                                          availChart = new Chart(availCtx, { 
-
-                                                              type: 'bar', 
-
-                                                              data: { 
-
-                                                                  labels: ['Disp. Mecânica', 'Disp. Física', 'Taxa Utilização'], 
-
-                                                                  datasets: [{ 
-
-                                                                      data: [ 
-
-                                                                          singleMechanical.toFixed(1), 
-
-                                                                          singlePhysical.toFixed(1), 
-
-                                                                          singleUtilization.toFixed(1) 
-
-                                                                      ], 
-
-                                                                      backgroundColor: [ 
-
-                                                                          'rgba(56, 189, 248, 0.85)', 
-
-                                                                          'rgba(45, 212, 191, 0.85)', 
-
-                                                                          'rgba(16, 185, 129, 0.85)' 
-
-                                                                      ], 
-
-                                                                      borderColor: [ 
-
-                                                                          '#38bdf8', 
-
-                                                                          '#2dd4bf', 
-
-                                                                          '#10b981' 
-
-                                                                      ], 
-
-                                                                      borderWidth: 1.5, 
-
-                                                                      borderRadius: 6 
-
-                                                                  }] 
-
-                                                              }, 
-
-                                                              options: { 
-
-                                                                  indexAxis: 'y', 
-
-                                                                  responsive: true, 
-
-                                                                  maintainAspectRatio: false, 
-
-                                                                  scales: { 
-
-                                                                      x: { 
-
-                                                                          min: 0, max: 100, 
-
-                                                                          grid: { color: 'rgba(255,255,255,0.05)' }, 
-
-                                                                          ticks: { color: '#94a3b8', callback: v => v + '%' } 
-
-                                                                      }, 
-
-                                                                      y: { 
-
-                                                                          grid: { display: false }, 
-
-                                                                          ticks: { color: '#f1f5f9', font: { weight: 'bold', size: 9 } } 
-
-                                                                      } 
-
-                                                                  }, 
-
-                                                                  plugins: { 
-
-                                                                      legend: { display: false }, 
-
-                                                                      tooltip: { 
-
-                                                                          backgroundColor: 'rgba(15, 23, 42, 0.85)', 
-
-                                                                          callbacks: { label: (ctx) => ` ${ctx.parsed.x.toFixed(1)}%` } 
-
-                                                                      }, 
-
-                                                                      datalabels: { 
-
-                                                                          display: true, 
-
-                                                                          color: '#fff', 
-
-                                                                          font: { weight: 'bold', size: 10 }, 
-
-                                                                          formatter: v => v + '%' 
-
-                                                                      } 
-
-                                                                  } 
-
-                                                              } 
-
-                                                          }); 
-
-                                                      } 
+                                                       // 2. Inicializar Gráfico Acumulado (Lado Direito)
+                                                       const availCtx = document.getElementById('individualAvailabilityChart');
+                                                       if(availCtx) {
+                                                           if(availChart) availChart.destroy();
+                                                           availChart = new Chart(availCtx, {
+                                                               type: 'bar',
+                                                               data: {
+                                                                   labels: ['Disp. Mecânica', 'Disp. Física', 'Taxa Utilização'],
+                                                                   datasets: [{ 
+                                                                       data: [
+                                                                           singleMechanical.toFixed(1),
+                                                                           singlePhysical.toFixed(1),
+                                                                           singleUtilization.toFixed(1)
+                                                                       ],
+                                                                       backgroundColor: [
+                                                                           'rgba(56, 189, 248, 0.85)',
+                                                                           'rgba(45, 212, 191, 0.85)',
+                                                                           'rgba(16, 185, 129, 0.85)'
+                                                                       ],
+                                                                       borderColor: [
+                                                                           '#38bdf8',
+                                                                           '#2dd4bf',
+                                                                           '#10b981'
+                                                                       ],
+                                                                       borderWidth: 1.5,
+                                                                       borderRadius: 6
+                                                                   }]
+                                                               },
+                                                               options: {
+                                                                   indexAxis: 'y',
+                                                                   responsive: true,
+                                                                   maintainAspectRatio: false,
+                                                                   scales: {
+                                                                       x: {
+                                                                           min: 0, max: 100,
+                                                                           grid: { color: 'rgba(255,255,255,0.05)' },
+                                                                           ticks: { color: '#94a3b8', callback: v => v + '%' }
+                                                                       },
+                                                                       y: {
+                                                                           grid: { display: false },
+                                                                           ticks: { color: '#f1f5f9', font: { weight: 'bold', size: 9 } }
+                                                                       }
+                                                                   },
+                                                                   plugins: {
+                                                                       legend: { display: false },
+                                                                       tooltip: {
+                                                                           backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                                                                           callbacks: { label: (ctx) => ' ' + ctx.parsed.x.toFixed(1) + '%' }
+                                                                       },
+                                                                       datalabels: {
+                                                                           display: true,
+                                                                           color: '#fff',
+                                                                           font: { weight: 'bold', size: 8 },
+                                                                           formatter: v => v + '%'
+                                                                       }
+                                                                   }
+                                                               }
+                                                           });
+                                                       }
 
                                                   }, 100); 
 
@@ -2482,9 +2523,9 @@
 
                                          </div> 
 
-                                         <div class="h-[125px] relative border-t border-white/5 pt-3"> 
+                                         <div class="h-[135px] relative border-t border-white/5 pt-3"> 
 
-                                             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1 text-center">Métricas de Disponibilidade e Utilização (%)</p> 
+                                             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1 text-center">Métricas Acumuladas (Média Histórica) (%)</p> 
 
                                              <canvas id="individualAvailabilityChart"></canvas> 
 
@@ -2532,19 +2573,18 @@
 
 
 
-                                 <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-
-
-
-                                     <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-
-
-
-                                     Timeline de Performance Mensal
-
-
-
-                                 </h4>
+                                  <div class="flex justify-between items-center w-full">
+                                      <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                          <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                          Timeline de Performance Mensal
+                                      </h4>
+                                      <!-- Botão de Download Excel -->
+                                      <button @click="downloadAssetExcel()" 
+                                              class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase tracking-wider transition-all border border-emerald-500/20 shadow-lg cursor-pointer">
+                                          <i class="fas fa-file-excel text-xs"></i>
+                                          Exportar Excel
+                                      </button>
+                                  </div>
 
 
 
@@ -3716,7 +3756,7 @@
 
 
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
 
 
 
@@ -4021,33 +4061,49 @@
 
 
                             <template x-if="getTopWorstAssets.length === 0">
-
-
-
                                 <div class="text-center p-4 text-slate-500 text-xs h-full flex items-center justify-center border border-white/5 rounded-xl border-dashed">Nenhum ativo com prejuízo encontrado.</div>
-
-
-
                             </template>
-
-
-
                         </div>
-
-
-
                     </div>
 
-
-
-
-
-
-
-
-
-
-
+                    <!-- Ranking de Ativos em Manutenção (Novo) -->
+                    <div class="glass p-4 rounded-2xl relative overflow-hidden flex flex-col">
+                        <div class="absolute inset-0 bg-yellow-500/5 pointer-events-none"></div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-xs font-bold text-yellow-400 uppercase tracking-widest flex items-center gap-2">
+                                <i class="fas fa-tools text-yellow-500"></i>
+                                Ranking Geral de Manutenção (h)
+                            </h3>
+                            <div class="group relative">
+                                <div class="w-5 h-5 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center cursor-help hover:bg-yellow-500/20 transition-all">
+                                    <i class="fas fa-info text-[10px] text-yellow-400"></i>
+                                </div>
+                                <div class="absolute z-50 right-0 top-7 w-64 p-4 bg-slate-900 border border-yellow-500/30 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 text-[11px] leading-relaxed text-slate-300 translate-y-2 group-hover:translate-y-0">
+                                    Lista completa de máquinas com horas acumuladas em manutenção no período, ordenadas do maior para o menor tempo.
+                                </div>
+                             </div>
+                        </div>
+                        <div class="space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar relative z-10 flex-1">
+                            <template x-for="(asset, index) in getTopMaintenanceAssets" :key="asset.AL">
+                                <div @click="openAssetDrilldown(asset.AL)" class="p-3 rounded-xl bg-slate-900/60 border border-yellow-500/20 flex items-center justify-between group hover:border-yellow-500/60 transition-all cursor-pointer">
+                                    <div class="flex items-center gap-3 w-[60%]">
+                                        <div class="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 font-black text-[10px] flex-none" x-text="'#' + (index + 1)"></div>
+                                        <div class="truncate">
+                                            <div class="text-[11px] font-bold text-slate-100 truncate" x-text="asset.AL"></div>
+                                            <div class="text-[9px] text-slate-500 uppercase font-bold truncate" x-text="getAssetEquipmentGroup(asset)"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right flex-none">
+                                        <div class="text-[9px] text-yellow-500 uppercase font-black mb-0.5">Tempo Manut.</div>
+                                        <div class="text-[11px] font-bold text-yellow-400 whitespace-nowrap" x-text="asset._maintenanceHours.toFixed(1) + 'h'"></div>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="getTopMaintenanceAssets.length === 0">
+                                <div class="text-center p-4 text-slate-500 text-xs h-full flex items-center justify-center border border-white/5 rounded-xl border-dashed">Nenhum ativo em manutenção encontrado.</div>
+                            </template>
+                        </div>
+                    </div>
                 </div>
 
 
@@ -4167,9 +4223,9 @@
                         <div class="absolute z-50 right-0 lg:left-0 top-7 w-72 p-4 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 text-[11px] leading-relaxed text-slate-300 translate-y-2 group-hover:translate-y-0">
 
 
-
-                            <p>Acompanha o histórico de aproveitamento da frota. Mostra se o percentual de **Horas Trabalhadas** em relação à **Garantia** está evoluindo positivamente ao longo dos meses.</p>
-
+                            <p class="font-bold text-white mb-1.5"><i class="fas fa-chart-bar text-sky-400 mr-1"></i> Média por Equipamento:</p>
+                            <p class="mb-1.5">Exibe a média de **Horas Trabalhadas** (em verde) e de **Horas em Garantia** (em vermelho) calculada por máquina nesta família.</p>
+                            <p class="text-sky-300 font-bold">*Exemplo:* Em ABR/26, um basculante trabalhou em média **89h** das **151h** da garantia proporcional contratada.</p>
 
 
                         </div>
@@ -8336,6 +8392,79 @@
 
 
 
+                    downloadExcelFromHeader() {
+                        const type = this.drilldown.type;
+                        if (type === 'family') {
+                            const assets = this.drilldownAssets || [];
+                            if (assets.length === 0) {
+                                alert('Nenhum dado disponível para exportar.');
+                                return;
+                            }
+                            const familyName = this.drilldown.selectedFamily || 'Familia';
+                            let csvContent = '\uFEFF';
+                            csvContent += 'Mês de Referência;Ativo;Denominação;Parceiro;Localização / Obra;Horas Trabalhadas;Horas Manutenção;Garantia Contratual;Saldo de Garantia (Ociosidade);Status Operacional\n';
+                            
+                            assets.forEach(a => {
+                                const mes = a.Mes_Referencia || '';
+                                const code = a.Prefixo || a.AL || 'N/A';
+                                const denom = a.Equipamento || '';
+                                const parc = a.Parceiro || a.Empresa_Locadora || 'N/A';
+                                const obra = a.Obra || 'N/A';
+                                const hTrab = (parseFloat(a.HorasTrabalhadas) || 0).toFixed(1);
+                                const hMan = (parseFloat(a.TempoManutencao) || 0).toFixed(1);
+                                const hGar = this.getGuaranteeHours(a.Mes_Referencia, a).toFixed(1);
+                                const hSaldo = Math.max(0, this.getGuaranteeHours(a.Mes_Referencia, a) - (parseFloat(a.HorasTrabalhadas) || 0)).toFixed(1);
+                                const status = a.Status_Operacional || a.Status || 'N/A';
+                                
+                                csvContent += mes + ';' + code + ';' + denom + ';' + parc + ';' + obra + ';' + hTrab + ';' + hMan + ';' + hGar + ';' + hSaldo + ';' + status + '\n';
+                            });
+                            
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', 'detalhamento_familia_' + familyName + '_' + new Date().toISOString().split('T')[0] + '.csv');
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        } else if (type === 'asset') {
+                            this.downloadAssetExcel();
+                        } else {
+                            alert('Exportação não disponível para este painel.');
+                        }
+                    },
+
+                    downloadAssetExcel() {
+                        const history = this.drilldown.assetHistory || [];
+                        if (history.length === 0) {
+                            alert('Nenhum dado disponível para exportar.');
+                            return;
+                        }
+                        const isFamily = this.drilldown.type === 'family';
+                        const assetCode = isFamily ? (this.drilldown.selectedFamily || 'Familia') : (this.drilldown.selectedAsset ? (this.drilldown.selectedAsset.Prefixo || this.drilldown.selectedAsset.AL || 'Ativo') : 'Ativo');
+                        const denom = isFamily ? 'Métricas da Família' : (this.drilldown.selectedAsset ? (this.drilldown.selectedAsset.Equipamento || '') : '');
+                        let csvContent = '\uFEFF';
+                        csvContent += 'Mês de Referência;Ativo/Família;Denominação;Localização / Obra;Horas Trabalhadas;Horas Manutenção;Garantia Contratual;Saldo de Garantia (Ociosidade);Status Operacional\n';
+                        history.forEach(hist => {
+                            const mes = hist.Mes_Referencia || '';
+                            const obra = hist.Obra || 'N/A';
+                            const hTrab = (parseFloat(hist.HorasTrabalhadas) || 0).toFixed(1);
+                            const hMan = (parseFloat(hist.TempoManutencao) || 0).toFixed(1);
+                            const hGar = this.getGuaranteeHours(hist.Mes_Referencia, hist).toFixed(1);
+                            const hSaldo = Math.max(0, this.getGuaranteeHours(hist.Mes_Referencia, hist) - (parseFloat(hist.HorasTrabalhadas) || 0)).toFixed(1);
+                            const status = hist.Status_Operacional || hist.Status || 'N/A';
+                            csvContent += mes + ';' + assetCode + ';' + denom + ';' + obra + ';' + hTrab + ';' + hMan + ';' + hGar + ';' + hSaldo + ';' + status + '\n';
+                        });
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.setAttribute('href', url);
+                        link.setAttribute('download', 'detalhamento_' + assetCode + '_' + new Date().toISOString().split('T')[0] + '.csv');
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    },
+
                     getGuaranteeHours(monthRef, asset) {
 
 
@@ -9881,6 +10010,7 @@
 
 
                             const wearTime = parseFloat(a.TempoDesgaste) || 0;
+                            const failTime = parseFloat(a.TempoFalha) || 0;
 
 
 
@@ -9932,14 +10062,10 @@
 
 
 
-                            if (resp.includes('OBRA') || resp.includes('CLIENTE') || causa.includes('OPERA')) {
-
-
-
+                            if (failTime > 0) {
+                                sumFalha += failTime;
+                            } else if (resp.includes('OBRA') || resp.includes('CLIENTE') || causa.includes('OPERA')) {
                                 sumFalha += mainTime;
-
-
-
                             }
 
 
@@ -10316,7 +10442,7 @@
 
 
 
-                        this.assets = window.ASSETS_DATA || [];
+                        this.assets = (window.ASSETS_DATA || []).filter(a => !(a.Equipamento || '').toString().toUpperCase().includes('NIBUS'));
 
 
 
@@ -12783,6 +12909,22 @@
                     },
 
 
+
+                    get getTopMaintenanceAssets() {
+                        if (this.dataView !== 'assets' || !this.filteredAssets.length) return [];
+                        const map = new Map();
+                        this.filteredAssets.forEach(a => {
+                            const mainTime = parseFloat(a.TempoManutencao) || 0;
+                            if (!map.has(a.AL)) {
+                                map.set(a.AL, { ...a, _maintenanceHours: 0 });
+                            }
+                            const entry = map.get(a.AL);
+                            entry._maintenanceHours += mainTime;
+                        });
+                        return Array.from(map.values())
+                            .filter(a => a._maintenanceHours > 0)
+                            .sort((a, b) => b._maintenanceHours - a._maintenanceHours);
+                    },
 
                     exportDemobilizationReport() {
 
