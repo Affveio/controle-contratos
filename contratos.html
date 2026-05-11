@@ -780,7 +780,7 @@
              @click.self="selectedContract = null"
              x-cloak>
             
-            <div class="glass w-full max-w-2xl max-h-[90vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl border-white/10">
+            <div class="glass w-full max-w-5xl max-h-[90vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl border-white/10">
                 <!-- Modal Header -->
                 <div class="p-8 border-b border-white/5 bg-gradient-to-r from-sky-500/10 to-transparent flex justify-between items-start">
                     <div>
@@ -793,94 +793,107 @@
                 </div>
 
                 <!-- Modal Content -->
-                <div class="p-8 overflow-y-auto custom-scrollbar">
-                    <!-- Resumo Principal -->
-                    <div class="grid grid-cols-2 gap-4 mb-8">
-                        <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
-                            <p class="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-1">Valor do Contrato</p>
-                            <p class="text-xl font-bold text-white" x-text="formatCurrency(selectedContract ? selectedContract['VALOR DO CONTRATO'] : 0)"></p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
-                            <p class="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-1">Total Medido</p>
-                            <p class="text-xl font-bold text-emerald-400" x-text="formatCurrency(selectedContract ? selectedContract['VALOR MEDIDO'] : 0)"></p>
-                        </div>
-                    </div>
-
-                    <!-- Informações Cadastrais -->
-                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Informações Cadastrais</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Obra</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['OBRA'] || '-') : '-'"></p>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5 md:col-span-2">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Centro de Custo</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['CENTRO DE CUSTO'] ? (window.COST_CENTER_NAMES && window.COST_CENTER_NAMES[selectedContract['CENTRO DE CUSTO']] ? selectedContract['CENTRO DE CUSTO'] + ' - ' + window.COST_CENTER_NAMES[selectedContract['CENTRO DE CUSTO']] : selectedContract['CENTRO DE CUSTO']) : '-') : '-'"></p>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">CNPJ / CPF</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['CNPJ / CPF'] || '-') : '-'"></p>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Nº do Contrato</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['Nº DE CONTRATO'] || '-') : '-'"></p>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Cód. SAP Fornecedor</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['CODIGO SAP FOR.'] || '-') : '-'"></p>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Cód. SAP Contrato</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['COD. SAP CONTRATO'] || '-') : '-'"></p>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Início do Contrato</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract && selectedContract['INICIO_CONTRATO'] ? selectedContract['INICIO_CONTRATO'].toString().split('T')[0].split('-').reverse().join('/') : '-'"></p>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Término do Contrato</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract && selectedContract['TERMINO_CONTRATO'] ? selectedContract['TERMINO_CONTRATO'].toString().split('T')[0].split('-').reverse().join('/') : '-'"></p>
-                        </div>
-                        <div class="bg-white/5 p-3 rounded-xl border border-white/5 md:col-span-4">
-                            <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">REIDI (Lucro presumido: 3,65% / Lucro real: 9,25%)</p>
-                            <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['REIDI'] || '-') : '-'"></p>
-                        </div>
-                    </div>
-
-                    <!-- Progresso Geral -->
-                    <div class="mb-10">
-                        <div class="flex justify-between items-end mb-2">
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Progresso Acumulado</p>
-                            <p class="text-xl font-bold text-sky-400" x-text="selectedContract ? (Math.round((selectedContract['VALOR MEDIDO'] / (selectedContract['VALOR DO CONTRATO'] || 1)) * 100) + '%') : '0%'"></p>
-                        </div>
-                        <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-full shadow-[0_0_15px_rgba(56,189,248,0.5)]" 
-                                 :style="`width: ${selectedContract ? Math.min((selectedContract['VALOR MEDIDO'] / (selectedContract['VALOR DO CONTRATO'] || 1)) * 100, 100) : 0}%`"></div>
-                        </div>
-                    </div>
-
-                    <!-- Detalhamento Mensal -->
-                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Histórico de Medições Mensais</h4>
-                    <div class="space-y-3">
-                        <template x-for="m in monthColumns" :key="m">
-                            <div x-show="selectedContract && parseNumber(selectedContract[m]) > 0" class="flex justify-between items-center p-4 rounded-2xl bg-white/5 hover:bg-white/[0.08] transition-all group">
-                                <div class="flex items-center">
-                                    <div class="w-2 h-2 rounded-full bg-sky-500 mr-4 group-hover:scale-150 transition-transform"></div>
-                                    <span class="text-sm font-bold text-slate-300 uppercase" x-text="m"></span>
+                <div class="p-8 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        
+                        <!-- Coluna da Esquerda: Resumo e Informações Cadastrais -->
+                        <div class="lg:col-span-5 flex flex-col gap-6">
+                            <!-- Resumo Principal -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
+                                    <p class="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-1">Valor do Contrato</p>
+                                    <p class="text-lg font-bold text-white" x-text="formatCurrency(selectedContract ? selectedContract['VALOR DO CONTRATO'] : 0)"></p>
                                 </div>
-                                <span class="text-sm font-bold text-white font-mono" x-text="formatCurrency(parseNumber(selectedContract[m]))"></span>
+                                <div class="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
+                                    <p class="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-1">Total Medido</p>
+                                    <p class="text-lg font-bold text-emerald-400" x-text="formatCurrency(selectedContract ? selectedContract['VALOR MEDIDO'] : 0)"></p>
+                                </div>
                             </div>
-                        </template>
-                    </div>
 
-                    <!-- Rodapé do Modal -->
-                    <div class="mt-10 p-4 rounded-2xl flex justify-between items-center border"
-                         :class="selectedContract && selectedContract['SALDO'] >= 0 ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-rose-500/5 border-rose-500/10'">
-                        <span class="text-xs font-bold uppercase tracking-widest"
-                              :class="selectedContract && selectedContract['SALDO'] >= 0 ? 'text-emerald-300' : 'text-rose-300'">Saldo Pendente</span>
-                        <span class="text-lg font-bold font-mono" 
-                              :class="selectedContract && selectedContract['SALDO'] >= 0 ? 'text-emerald-400' : 'text-rose-400'"
-                              x-text="formatCurrency(selectedContract ? selectedContract['SALDO'] : 0)"></span>
+                            <!-- Progresso Geral -->
+                            <div>
+                                <div class="flex justify-between items-end mb-2">
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Progresso Acumulado</p>
+                                    <p class="text-lg font-bold text-sky-400" x-text="selectedContract ? (Math.round((selectedContract['VALOR MEDIDO'] / (selectedContract['VALOR DO CONTRATO'] || 1)) * 100) + '%') : '0%'"></p>
+                                </div>
+                                <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-full shadow-[0_0_15px_rgba(56,189,248,0.5)]" 
+                                         :style="`width: ${selectedContract ? Math.min((selectedContract['VALOR MEDIDO'] / (selectedContract['VALOR DO CONTRATO'] || 1)) * 100, 100) : 0}%`"></div>
+                                </div>
+                            </div>
+
+                            <!-- Informações Cadastrais -->
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Informações Cadastrais</h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Obra</p>
+                                        <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['OBRA'] || '-') : '-'"></p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">CNPJ / CPF</p>
+                                        <p class="text-[10px] font-bold text-slate-200 truncate" x-text="selectedContract ? (selectedContract['CNPJ / CPF'] || '-') : '-'"></p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 col-span-2">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Centro de Custo</p>
+                                        <p class="text-[10px] font-bold text-slate-200 truncate" x-text="selectedContract ? (selectedContract['CENTRO DE CUSTO'] ? (window.COST_CENTER_NAMES && window.COST_CENTER_NAMES[selectedContract['CENTRO DE CUSTO']] ? selectedContract['CENTRO DE CUSTO'] + ' - ' + window.COST_CENTER_NAMES[selectedContract['CENTRO DE CUSTO']] : selectedContract['CENTRO DE CUSTO']) : '-') : '-'"></p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Nº do Contrato</p>
+                                        <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['Nº DE CONTRATO'] || '-') : '-'"></p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Cód. SAP Forn.</p>
+                                        <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['CODIGO SAP FOR.'] || '-') : '-'"></p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Cód. SAP Contrato</p>
+                                        <p class="text-xs font-bold text-slate-200" x-text="selectedContract ? (selectedContract['COD. SAP CONTRATO'] || '-') : '-'"></p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Início</p>
+                                        <p class="text-xs font-bold text-slate-200" x-text="selectedContract && selectedContract['INICIO_CONTRATO'] ? selectedContract['INICIO_CONTRATO'].toString().split('T')[0].split('-').reverse().join('/') : '-'"></p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 col-span-2">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Término do Contrato</p>
+                                        <p class="text-xs font-bold text-slate-200" x-text="selectedContract && selectedContract['TERMINO_CONTRATO'] ? selectedContract['TERMINO_CONTRATO'].toString().split('T')[0].split('-').reverse().join('/') : '-'"></p>
+                                    </div>
+                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 col-span-2">
+                                        <p class="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">REIDI</p>
+                                        <p class="text-[10px] font-bold text-slate-200 truncate" x-text="selectedContract ? (selectedContract['REIDI'] || '-') : '-'"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Saldo Pendente -->
+                            <div class="p-4 rounded-2xl flex justify-between items-center border"
+                                 :class="selectedContract && selectedContract['SALDO'] >= 0 ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-rose-500/5 border-rose-500/10'">
+                                <span class="text-xs font-bold uppercase tracking-widest"
+                                      :class="selectedContract && selectedContract['SALDO'] >= 0 ? 'text-emerald-300' : 'text-rose-300'">Saldo Pendente</span>
+                                <span class="text-base font-bold font-mono" 
+                                      :class="selectedContract && selectedContract['SALDO'] >= 0 ? 'text-emerald-400' : 'text-rose-400'"
+                                      x-text="formatCurrency(selectedContract ? selectedContract['SALDO'] : 0)"></span>
+                            </div>
+                        </div>
+
+                        <!-- Coluna da Direita: Histórico de Medições e Gráfico -->
+                        <div class="lg:col-span-7 flex flex-col gap-6">
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Histórico de Medições Mensais</h4>
+                                
+                                <!-- Gráfico Mensal do Contrato -->
+                                <div class="glass p-5 rounded-[2rem] border border-white/5 bg-white/[0.02] flex flex-col gap-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Evolução Mensal das Medições</span>
+                                        <span class="text-[9px] font-bold text-sky-400 uppercase tracking-widest">Gráfico de Histórico</span>
+                                    </div>
+                                    <div class="relative h-[220px]">
+                                        <canvas id="contractMonthlyChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -913,20 +926,17 @@
                 </div>
 
                 <!-- Lista de Contratos do Setor -->
-                <div class="p-8 overflow-y-auto custom-scrollbar flex-1">
-                    <div class="space-y-4">
-                        <template x-for="c in contracts.filter(x => x['SETOR'] === selectedSectorForModal && (filters.month === 'all' || parseNumber(x[filters.month]) > 0)).sort((a,b) => filters.month === 'all' ? parseNumber(b['VALOR DO CONTRATO']) - parseNumber(a['VALOR DO CONTRATO']) : parseNumber(b[filters.month]) - parseNumber(a[filters.month]))" :key="c._uid">
-                            <div @click="selectedSectorForModal = null; setTimeout(() => { selectedContract = c; }, 300)" class="flex justify-between items-center p-5 rounded-3xl bg-white/5 hover:bg-white/[0.08] transition-all border border-white/5 cursor-pointer group">
-                                <div class="flex-1 pr-4">
-                                    <p class="text-xs font-black text-slate-300 group-hover:text-emerald-400 transition-colors uppercase tracking-wider mb-1" x-text="c['SUBCONTRATADO']"></p>
-                                    <p class="text-[10px] text-slate-500 uppercase font-bold truncate max-w-[250px]" x-text="c['ESCOPO']"></p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors" x-text="formatCurrency(filters.month === 'all' ? parseNumber(c['VALOR DO CONTRATO']) : parseNumber(c[filters.month]))"></p>
-                                    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5" x-text="filters.month === 'all' ? 'Valor do Contrato' : ('Medição ' + filters.month)"></p>
-                                </div>
-                            </div>
-                        </template>
+                <div class="p-8 overflow-y-auto custom-scrollbar flex-1 flex flex-col gap-6">
+                    
+                    <!-- Gráfico do Setor -->
+                    <div class="glass p-5 rounded-[2rem] border border-white/5 bg-white/[0.02] flex flex-col gap-3">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest" x-text="filters.month === 'all' ? 'Maiores Contratos (Valor Total)' : 'Maiores Medições (Mês Selecionado)'"></h4>
+                            <span class="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Distribuição por Valor</span>
+                        </div>
+                        <div class="relative h-[220px]">
+                            <canvas id="sectorDetailChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -975,26 +985,16 @@
                     </button>
                 </div>
 
-                <!-- Lista de Contratos do Mês/CC -->
+                <!-- Gráfico de Contratos do Mês/CC -->
                 <div class="p-8 overflow-y-auto custom-scrollbar flex-1">
-                    <div class="space-y-4">
-                        <template x-for="c in contracts.filter(x => parseNumber(x[selectedClosingMonth]) > 0 && (!selectedClosingCC || selectedClosingCC === 'all' || x['CENTRO DE CUSTO'] === selectedClosingCC)).sort((a,b) => parseNumber(b[selectedClosingMonth]) - parseNumber(a[selectedClosingMonth]))" :key="c._uid + '_closing'">
-                            <div @click="selectedClosingMonth = null; selectedClosingCC = null; setTimeout(() => { selectedContract = c; }, 300)" class="flex justify-between items-center p-5 rounded-3xl bg-white/5 hover:bg-white/[0.08] transition-all border border-white/5 cursor-pointer group">
-                                <div class="flex-1 pr-4">
-                                    <p class="text-xs font-black text-slate-300 group-hover:text-sky-400 transition-colors uppercase tracking-wider mb-1" x-text="c['SUBCONTRATADO']"></p>
-                                    <p class="text-[10px] text-slate-500 uppercase font-bold truncate max-w-[250px]" x-text="c['ESCOPO']"></p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-bold text-sky-400 group-hover:text-white transition-colors" x-text="formatCurrency(parseNumber(c[selectedClosingMonth]))"></p>
-                                    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5" x-text="'Medição ' + selectedClosingMonth"></p>
-                                </div>
-                            </div>
-                        </template>
-                        <template x-if="contracts.filter(x => parseNumber(x[selectedClosingMonth]) > 0 && (!selectedClosingCC || selectedClosingCC === 'all' || x['CENTRO DE CUSTO'] === selectedClosingCC)).length === 0">
-                            <div class="text-center p-10 text-slate-500 font-bold uppercase tracking-widest text-sm border-2 border-dashed border-white/5 rounded-3xl">
-                                Nenhum registro medido para este detalhamento.
-                            </div>
-                        </template>
+                    <div class="glass p-5 rounded-[2rem] border border-white/5 bg-white/[0.02] flex flex-col gap-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest" x-text="selectedClosingCC && selectedClosingCC !== 'all' ? 'Medições por Empresa no CC' : 'Medições por Empresa no Mês'"></span>
+                            <span class="text-[9px] font-bold text-sky-400 uppercase tracking-widest">Distribuição Mensal</span>
+                        </div>
+                        <div class="relative h-[220px]">
+                            <canvas id="monthlyClosingChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -1190,6 +1190,24 @@
                             // Removido o ajuste automático de mês para dar controle total ao usuário
                             this.updateCharts();
                         });
+
+                        this.$watch('selectedSectorForModal', (val) => {
+                            if (val) {
+                                setTimeout(() => this.updateSectorChart(), 150);
+                            }
+                        });
+
+                        this.$watch('selectedContract', (val) => {
+                            if (val) {
+                                setTimeout(() => this.updateContractMonthlyChart(), 150);
+                            }
+                        });
+
+                        this.$watch('selectedClosingMonth', (val) => {
+                            if (val) {
+                                setTimeout(() => this.updateMonthlyClosingChart(), 150);
+                            }
+                        });
                         
                         // Esperar o DOM estar pronto para iniciar os gráficos
                         setTimeout(() => {
@@ -1211,6 +1229,377 @@
                             }
                             // Definir a visualização para focar no último mês válido
                             this.timelineIndex = Math.max(0, lastValidIndex - this.visibleMonthCount + 1);
+                        }
+                    },
+
+                    updateSectorChart() {
+                        try {
+                            const canvas = document.getElementById('sectorDetailChart');
+                            if (!canvas) return;
+
+                            if (chartInstances.sectorDetail) {
+                                chartInstances.sectorDetail.destroy();
+                            }
+
+                            const sector = this.selectedSectorForModal;
+                            if (!sector) return;
+
+                            // Obter contratos para este setor e agrupar por SUBCONTRATADO
+                            const sectorContracts = this.contracts.filter(x => 
+                                x['SETOR'] === sector
+                            );
+
+                            const companyMap = {};
+                            sectorContracts.forEach(c => {
+                                const comp = c['SUBCONTRATADO'] || 'NÃO INFORMADO';
+                                const val = this.filters.month === 'all' 
+                                    ? this.parseNumber(c['VALOR DO CONTRATO']) 
+                                    : this.parseNumber(c[this.filters.month]);
+                                if (val > 0) {
+                                    companyMap[comp] = (companyMap[comp] || 0) + val;
+                                }
+                            });
+
+                            // Converter para array e ordenar do maior para o menor
+                            const sortedCompanies = Object.keys(companyMap).map(comp => ({
+                                company: comp,
+                                total: companyMap[comp]
+                            })).sort((a, b) => b.total - a.total);
+
+                            if (sortedCompanies.length === 0) return;
+
+                            // Ajustar altura dinâmica do contêiner do canvas com base no número de empresas para evitar esmagamento
+                            const container = canvas.parentElement;
+                            if (container) {
+                                const numCompanies = sortedCompanies.length;
+                                const dynamicHeight = Math.max(220, numCompanies * 42); // 42px por empresa para excelente espaçamento, mínimo de 220px
+                                container.style.height = dynamicHeight + 'px';
+                            }
+
+                            const labels = sortedCompanies.map(c => c.company.length > 28 ? c.company.substring(0, 25) + '...' : c.company);
+                            const data = sortedCompanies.map(c => c.total);
+
+                            // Recuperar a cor do setor do gráfico principal para consistência visual fantástica!
+                            const sectorColor = this.sectorColors[sector] || '#38bdf8';
+                            const ctx = canvas.getContext('2d');
+                            
+                            // Criar um degradê horizontal premium combinando com a cor do setor
+                            const gradient = ctx.createLinearGradient(0, 0, canvas.width || 400, 0);
+                            gradient.addColorStop(0, sectorColor);
+                            gradient.addColorStop(1, sectorColor + '20');
+
+                            chartInstances.sectorDetail = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        label: this.filters.month === 'all' ? 'Valor Contratado' : 'Medição Mês',
+                                        data: data,
+                                        backgroundColor: gradient,
+                                        hoverBackgroundColor: sectorColor,
+                                        borderRadius: 8,
+                                        borderWidth: 0,
+                                        barPercentage: 0.6
+                                    }]
+                                },
+                                options: {
+                                    indexAxis: 'y',
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    onClick: (event, elements) => {
+                                        if (elements.length > 0) {
+                                            const index = elements[0].index;
+                                            const companyName = sortedCompanies[index]?.company;
+                                            if (companyName) {
+                                                const contract = sectorContracts.find(c => (c['SUBCONTRATADO'] || 'NÃO INFORMADO') === companyName);
+                                                if (contract) {
+                                                    this.selectedSectorForModal = null;
+                                                    setTimeout(() => {
+                                                        this.selectedContract = contract;
+                                                    }, 300);
+                                                }
+                                            }
+                                        }
+                                    },
+                                    onHover: (event, chartElement) => {
+                                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                                    },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                            titleColor: '#fff',
+                                            bodyColor: '#cbd5e1',
+                                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                                            borderWidth: 1,
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (ctx) => ' ' + this.formatCurrency(ctx.raw)
+                                            }
+                                        },
+                                        datalabels: {
+                                            anchor: 'end',
+                                            align: 'right',
+                                            offset: 4,
+                                            color: '#cbd5e1',
+                                            font: { size: 9, weight: 'bold', family: 'Inter, sans-serif' },
+                                            formatter: (value) => {
+                                                if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(1) + 'M';
+                                                if (value >= 1000) return 'R$ ' + (value / 1000).toFixed(0) + 'k';
+                                                return 'R$ ' + value.toLocaleString('pt-BR');
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            display: false,
+                                            grid: { display: false }
+                                        },
+                                        y: {
+                                            grid: { display: false },
+                                            ticks: {
+                                                color: '#94a3b8',
+                                                font: { size: 9, weight: 'bold', family: 'Inter, sans-serif' }
+                                            }
+                                        }
+                                    },
+                                    layout: {
+                                        padding: { right: 55, left: 5 }
+                                    }
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Erro no updateSectorChart:', e);
+                        }
+                    },
+
+                    updateContractMonthlyChart() {
+                        try {
+                            const canvas = document.getElementById('contractMonthlyChart');
+                            if (!canvas) return;
+
+                            if (chartInstances.contractMonthly) {
+                                chartInstances.contractMonthly.destroy();
+                            }
+
+                            const contract = this.selectedContract;
+                            if (!contract) return;
+
+                            // Obter meses que possuem medição cadastrada maior que zero
+                            const monthsWithData = this.monthColumns.filter(m => 
+                                this.parseNumber(contract[m]) > 0
+                            );
+
+                            if (monthsWithData.length === 0) return;
+
+                            // Ajustar altura dinâmica do contêiner do canvas com base na quantidade de meses
+                            const container = canvas.parentElement;
+                            if (container) {
+                                const numMonths = monthsWithData.length;
+                                const dynamicHeight = Math.max(180, numMonths * 38); // 38px por mês, mínimo de 180px
+                                container.style.height = dynamicHeight + 'px';
+                            }
+
+                            const labels = monthsWithData;
+                            const data = monthsWithData.map(m => this.parseNumber(contract[m]));
+
+                            const ctx = canvas.getContext('2d');
+                            const color = '#38bdf8'; // Azul céu para as medições individuais do contrato
+                            
+                            // Criar um degradê horizontal premium
+                            const gradient = ctx.createLinearGradient(0, 0, canvas.width || 400, 0);
+                            gradient.addColorStop(0, color);
+                            gradient.addColorStop(1, color + '20');
+
+                            chartInstances.contractMonthly = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        label: 'Valor Medido',
+                                        data: data,
+                                        backgroundColor: gradient,
+                                        hoverBackgroundColor: color,
+                                        borderRadius: 6,
+                                        borderWidth: 0,
+                                        barPercentage: 0.6
+                                    }]
+                                },
+                                options: {
+                                    indexAxis: 'y',
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                            titleColor: '#fff',
+                                            bodyColor: '#cbd5e1',
+                                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                                            borderWidth: 1,
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (ctx) => ' ' + this.formatCurrency(ctx.raw)
+                                            }
+                                        },
+                                        datalabels: {
+                                            anchor: 'end',
+                                            align: 'right',
+                                            offset: 4,
+                                            color: '#cbd5e1',
+                                            font: { size: 9, weight: 'bold', family: 'Inter, sans-serif' },
+                                            formatter: (value) => {
+                                                if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(1) + 'M';
+                                                if (value >= 1000) return 'R$ ' + (value / 1000).toFixed(0) + 'k';
+                                                return 'R$ ' + value.toLocaleString('pt-BR');
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            display: false,
+                                            grid: { display: false }
+                                        },
+                                        y: {
+                                            grid: { display: false },
+                                            ticks: {
+                                                color: '#94a3b8',
+                                                font: { size: 9, weight: 'bold', family: 'Inter, sans-serif' }
+                                            }
+                                        }
+                                    },
+                                    layout: {
+                                        padding: { right: 55, left: 5 }
+                                    }
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Erro no updateContractMonthlyChart:', e);
+                        }
+                    },
+
+                    updateMonthlyClosingChart() {
+                        try {
+                            const canvas = document.getElementById('monthlyClosingChart');
+                            if (!canvas) return;
+
+                            if (chartInstances.monthlyClosing) {
+                                chartInstances.monthlyClosing.destroy();
+                            }
+
+                            const month = this.selectedClosingMonth;
+                            if (!month) return;
+                            const cc = this.selectedClosingCC;
+
+                            // Filtrar e ordenar contratos
+                            const filtered = this.contracts.filter(x => 
+                                this.parseNumber(x[month]) > 0 && 
+                                (!cc || cc === 'all' || x['CENTRO DE CUSTO'] === cc)
+                            ).sort((a, b) => this.parseNumber(b[month]) - this.parseNumber(a[month]));
+
+                            if (filtered.length === 0) return;
+
+                            // Ajustar altura dinâmica com base no número de empresas
+                            const container = canvas.parentElement;
+                            if (container) {
+                                const numCompanies = filtered.length;
+                                const dynamicHeight = Math.max(220, numCompanies * 42); // 42px por empresa
+                                container.style.height = dynamicHeight + 'px';
+                            }
+
+                            const labels = filtered.map(c => {
+                                const name = c['SUBCONTRATADO'] || 'NÃO INFORMADO';
+                                return name.length > 28 ? name.substring(0, 25) + '...' : name;
+                            });
+                            const data = filtered.map(c => this.parseNumber(c[month]));
+
+                            const ctx = canvas.getContext('2d');
+                            const color = '#38bdf8'; // Azul céu premium para detalhamento de fechamento
+                            
+                            const gradient = ctx.createLinearGradient(0, 0, canvas.width || 400, 0);
+                            gradient.addColorStop(0, color);
+                            gradient.addColorStop(1, color + '20');
+
+                            chartInstances.monthlyClosing = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        label: 'Valor Medido',
+                                        data: data,
+                                        backgroundColor: gradient,
+                                        hoverBackgroundColor: color,
+                                        borderRadius: 6,
+                                        borderWidth: 0,
+                                        barPercentage: 0.6
+                                    }]
+                                },
+                                options: {
+                                    indexAxis: 'y',
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    onClick: (event, elements) => {
+                                        if (elements.length > 0) {
+                                            const index = elements[0].index;
+                                            const contract = filtered[index];
+                                            if (contract) {
+                                                this.selectedClosingMonth = null;
+                                                this.selectedClosingCC = null;
+                                                setTimeout(() => {
+                                                    this.selectedContract = contract;
+                                                }, 300);
+                                            }
+                                        }
+                                    },
+                                    onHover: (event, chartElement) => {
+                                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                                    },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                            titleColor: '#fff',
+                                            bodyColor: '#cbd5e1',
+                                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                                            borderWidth: 1,
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (ctx) => ' ' + this.formatCurrency(ctx.raw)
+                                            }
+                                        },
+                                        datalabels: {
+                                            anchor: 'end',
+                                            align: 'right',
+                                            offset: 4,
+                                            color: '#cbd5e1',
+                                            font: { size: 9, weight: 'bold', family: 'Inter, sans-serif' },
+                                            formatter: (value) => {
+                                                if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(1) + 'M';
+                                                if (value >= 1000) return 'R$ ' + (value / 1000).toFixed(0) + 'k';
+                                                return 'R$ ' + value.toLocaleString('pt-BR');
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            display: false,
+                                            grid: { display: false }
+                                        },
+                                        y: {
+                                            grid: { display: false },
+                                            ticks: {
+                                                color: '#94a3b8',
+                                                font: { size: 9, weight: 'bold', family: 'Inter, sans-serif' }
+                                            }
+                                        }
+                                    },
+                                    layout: {
+                                        padding: { right: 55, left: 5 }
+                                    }
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Erro no updateMonthlyClosingChart:', e);
                         }
                     },
 
@@ -2744,6 +3133,10 @@
                                 });
                             }
                         }
+
+                        this.updateSectorChart();
+                        this.updateContractMonthlyChart();
+                        this.updateMonthlyClosingChart();
 
                         } catch(e) {
                             console.error('ERRO no updateCharts:', e);

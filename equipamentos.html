@@ -10442,7 +10442,10 @@
 
 
 
-                        this.assets = (window.ASSETS_DATA || []).filter(a => !(a.Equipamento || '').toString().toUpperCase().includes('NIBUS'));
+                        this.assets = (window.ASSETS_DATA || []).filter(a => {
+                            const eq = (a.Equipamento || '').toString().toUpperCase();
+                            return !eq.includes('NIBUS') && !(eq.includes('BOMBA') && eq.includes('LAN')) && !eq.includes('GUINDASTE');
+                        });
 
 
 
