@@ -10444,7 +10444,18 @@
 
                         this.assets = (window.ASSETS_DATA || []).filter(a => {
                             const eq = (a.Equipamento || '').toString().toUpperCase();
-                            return !eq.includes('NIBUS') && !(eq.includes('BOMBA') && eq.includes('LAN')) && !eq.includes('GUINDASTE');
+                            if (eq.includes('NIBUS')) {
+                                // O usuário solicitou voltar nas contagens mas ignorar horímetros (sem controle)
+                                // Forçamos 0 nos custos/horas para não poluir os KPIS de prejuízo financeiro
+                                a.ValorHora = 0;
+                                a.HorasTrabalhadas = 0;
+                                a.HorasImprodutivas = 0;
+                                a.TempoManutencao = 0;
+                                a.TempoDesgaste = 0;
+                                a.TempoFalha = 0;
+                                return true;
+                            }
+                            return !(eq.includes('BOMBA') && eq.includes('LAN')) && !eq.includes('GUINDASTE');
                         });
 
 
@@ -11938,22 +11949,13 @@
 
 
                         for (const a of this.filteredAssets) {
-
-
-
                             const al = this.formatAssetAL(a);
-
-
-
+                            const alKey = String(al).trim().toUpperCase() || ("U_" + Math.random());
                             const family = this.getAssetEquipmentGroup(a);
-
-
-
-                            if (!map.has(al)) map.set(al, { al: al, family: family, horasT: 0, horasG: 0 });
-
-
-
-                            const m = map.get(al);
+                            if (!map.has(alKey)) {
+                                map.set(alKey, { al: al, family: family, horasT: 0, horasG: 0 });
+                            }
+                            const m = map.get(alKey);
 
 
 
@@ -13054,127 +13056,61 @@
 
 
                     get getFleetSizingMetrics() {
-
-
-
                         if (this.dataView !== 'assets' || !this.filteredAssets.length) return [];
-
-
-
                         const map = new Map();
 
-
-
                         for (const a of this.filteredAssets) {
-
-
-
                             const fam = this.getAssetEquipmentGroup(a) || '-';
-
-
-
-                            if (!map.has(fam)) map.set(fam, { family: fam, worked: 0, idle: 0, count: 0, costPerH: 0, idleCost: 0 });
-
-
-
+                            if (!map.has(fam)) {
+                                map.set(fam, { 
+                                    family: fam, worked: 0, idle: 0, costPerH: 0, idleCost: 0, 
+                                    als: new Set(), totalPotentialHours: 0 
+                                });
+                            }
                             const m = map.get(fam);
-
-
+                            
+                            // Count Unique Equipment via Set
+                            const al = this.formatAssetAL(a);
+                            m.als.add(al);
 
                             m.worked += parseFloat(a.HorasTrabalhadas) || 0;
-
-
-
                             
-
-
-
                             const currentIdle = this.getAssetIdleHours(a);
-
-
-
                             m.idle += currentIdle;
-
-
-
-                            m.count++;
-
-
-
                             
-
-
-
                             const valH = parseFloat(a.ValorHora) || 0;
-
-
-
                             m.idleCost += currentIdle * valH;
-
-
-
                             if (valH > 0) m.costPerH = valH;
 
-
-
+                            // Cumulative potential guarantee hours
+                            const rowG = this.getGuaranteeHours(a.Mes_Referencia, a) || 200;
+                            m.totalPotentialHours += rowG;
                         }
 
-
-
-                        
-
-
-
                         return Array.from(map.values()).map(m => {
-
-
-
-                            const representativeAsset = this.filteredAssets.find(a => this.getAssetEquipmentGroup(a) === m.family);
-
-
-
-                            const baseG = this.getGuaranteeHours(representativeAsset?.Mes_Referencia || 'all', representativeAsset) || 200;
-
-
-
-                            const ideal = Math.ceil((m.worked || 0) / baseG);
-
-
-
-                            const excess = Math.max(0, (m.count || 0) - ideal);
-
-
+                            const totalMachines = m.als.size;
+                            
+                            // Calculate relative usage across the whole window to derive stable ideal counts
+                            let utilization = m.totalPotentialHours > 0 ? (m.worked / m.totalPotentialHours) : 0;
+                            
+                            // Ônibus não têm controle de horímetro, logo os tratamos como 100% ideais/necessários
+                            if (m.family.toUpperCase().includes('NIBUS')) {
+                                utilization = 1.0;
+                            }
+                            
+                            // Mathematical projection of unique fleet utilized
+                            const ideal = Math.ceil(utilization * totalMachines);
+                            const excess = Math.max(0, totalMachines - ideal);
 
                             return {
-
-
-
                                 ...m,
-
-
-
+                                count: totalMachines,
                                 idealFleet: ideal,
-
-
-
                                 excessFleet: excess,
-
-
-
                                 idleCost: m.idleCost,
-
-
-
-                                saturation: m.count > 0 ? (ideal / m.count) * 100 : 0
-
-
-
+                                saturation: totalMachines > 0 ? (ideal / totalMachines) * 100 : 0
                             };
-
-
-
                         }).sort((a, b) => (b.idleCost || 0) - (a.idleCost || 0));
-
 
 
                     },
@@ -17033,26 +16969,27 @@
 
 
 
-                                        const label = g.name.toLowerCase();
+                                        const uniqueAls = new Set();
+                                        for (let i = g.start; i <= g.end; i++) {
+                                            const item = mRefs[i];
+                                            if (item) uniqueAls.add(item.al || item.AL || i);
+                                        }
+                                        const count = uniqueAls.size;
+                                        const baseLabel = g.name.toLowerCase();
+                                        const countStr = ` (${count})`;
+                                        let displayLabel = baseLabel + countStr;
+                                        const avail = endX - startX;
 
-
-
-                                        
-
-
-
-                                        let displayLabel = label;
-
-
-
-                                        if (label.length > (endX - startX) / 5) {
-
-
-
-                                            displayLabel = label.substring(0, Math.floor((endX - startX) / 6)) + '...';
-
-
-
+                                        if (displayLabel.length > avail / 5) {
+                                            const chars = Math.floor(avail / 6);
+                                            const cut = Math.max(0, chars - countStr.length - 1);
+                                            if (cut > 1) {
+                                                displayLabel = baseLabel.substring(0, cut) + "." + countStr;
+                                            } else if (chars >= countStr.length) {
+                                                displayLabel = countStr;
+                                            } else {
+                                                displayLabel = count.toString();
+                                            }
                                         }
 
 
