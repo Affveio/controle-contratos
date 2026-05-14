@@ -4272,50 +4272,23 @@
 
 
 
-                <div class="flex items-center gap-2 mb-4">
-
-
-
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Performance por Equipamento (h)</h3>
-
-
-
-                    <div class="group relative">
-
-
-
-                        <div class="w-5 h-5 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center cursor-help hover:bg-sky-500/20 transition-all">
-
-
-
-                            <i class="fas fa-info text-[10px] text-sky-400"></i>
-
-
-
+                <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Performance por Equipamento (h)</h3>
+                        <div class="group relative">
+                            <div class="w-5 h-5 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center cursor-help hover:bg-sky-500/20 transition-all">
+                                <i class="fas fa-info text-[10px] text-sky-400"></i>
+                            </div>
+                            <div class="absolute z-50 left-0 top-7 w-72 p-4 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 text-[11px] leading-relaxed text-slate-300 translate-y-2 group-hover:translate-y-0">
+                                <p>Análise individual por ativo (AL) do cumprimento da meta mensal (200h ou 0h em chuvas). </p>
+                                <p class="mt-2"><strong class="text-emerald-400">Verde:</strong> Horas Efetivas. <br><strong class="text-rose-400">Vermelho:</strong> Horas de Garantia pagas sem produção.</p>
+                            </div>
                         </div>
-
-
-
-                        <div class="absolute z-50 left-0 top-7 w-72 p-4 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 text-[11px] leading-relaxed text-slate-300 translate-y-2 group-hover:translate-y-0">
-
-
-
-                            <p>Análise individual por ativo (AL) do cumprimento da meta mensal (200h ou 0h em chuvas). </p>
-
-
-
-                            <p class="mt-2"><strong class="text-emerald-400">Verde:</strong> Horas Efetivas. <br><strong class="text-rose-400">Vermelho:</strong> Horas de Garantia pagas sem produção.</p>
-
-
-
-                        </div>
-
-
-
                     </div>
-
-
-
+                    <button @click="printFieldPerformanceReport()" class="px-3.5 py-2 text-[11px] font-black text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border border-emerald-500/40 rounded-xl flex items-center gap-2 transition-all shadow-lg cursor-pointer select-none transform active:scale-95 group">
+                        <i class="fas fa-print text-[12px] group-hover:animate-bounce"></i>
+                        IMPRIMIR RANKING P/ CAMPO
+                    </button>
                 </div>
 
 
@@ -8768,6 +8741,163 @@
 
 
 
+
+                    printFieldPerformanceReport() {
+                        const metrics = this.getIndividualAssetMetrics;
+                        if (!metrics || metrics.length === 0) {
+                            alert('Nenhum dado disponível para gerar o relatório. Verifique se existem ativos nos filtros atuais.');
+                            return;
+                        }
+
+                        const workFilter = this.assetFilters.work === 'all' ? 'TODAS AS OBRAS' : this.assetFilters.work;
+                        const monthFilter = this.assetFilters.month === 'all' ? 'TODOS OS MESES' : this.assetFilters.month;
+                        const dateGenerated = new Date().toLocaleString('pt-BR');
+
+                        let tableRows = '';
+                        metrics.forEach((m, idx) => {
+                            const total = m.horasT + m.horasG;
+                            const pct = total > 0 ? ((m.horasT / total) * 100).toFixed(1) : '0.0';
+                            
+                            tableRows += `
+                                <tr class="${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-b border-gray-300">
+                                    <td class="px-2 py-1.5 font-black text-gray-700 border-r border-gray-300 text-center w-[40px]">${idx + 1}</td>
+                                    <td class="px-2 py-1.5 font-bold text-gray-900 border-r border-gray-300 text-[10.5px]">${m.family}</td>
+                                    <td class="px-2 py-1.5 font-black text-blue-900 border-r border-gray-300 text-[11px] tracking-wide">${m.al}</td>
+                                    <td class="px-2 py-1.5 text-right font-black text-emerald-700 border-r border-gray-300">${m.horasT.toFixed(1)} h</td>
+                                    <td class="px-2 py-1.5 text-right font-semibold text-rose-600 border-r border-gray-300">${m.horasG.toFixed(1)} h</td>
+                                    <td class="px-2 py-1.5 text-right font-bold text-gray-800 border-r border-gray-300 bg-gray-100">${total.toFixed(1)} h</td>
+                                    <td class="px-2 py-1.5 text-center font-black text-emerald-800 border-r border-gray-300 bg-emerald-50 text-[11px]">${pct}%</td>
+                                    <td class="px-3 py-1.5 w-[140px] text-center">
+                                        <div class="w-full h-3 bg-rose-200 rounded-full overflow-hidden flex border border-gray-400" style="background-color: #fecdd3 !important;">
+                                            <div class="h-full bg-emerald-500" style="width: ${pct}%; background-color: #10b981 !important;"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        const printHtml = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Performance Campo - ${workFilter} - ${monthFilter}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            @page { margin: 1.0cm; size: A4; }
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; background: white !important; }
+            .no-print { display: none !important; }
+            tr { page-break-inside: avoid; }
+            thead { display: table-header-group; }
+        }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f8fafc; }
+        table { page-break-inside: auto; }
+    </style>
+</head>
+<body class="text-black text-[11px]">
+    <div class="no-print fixed top-0 left-0 w-full bg-emerald-600 text-white py-3 px-6 flex justify-between items-center shadow-xl z-50">
+        <div class="flex items-center gap-3">
+            <div class="bg-white/20 p-2 rounded-lg"><i class="fas fa-file-alt text-xl"></i></div>
+            <div>
+                <span class="font-black text-[15px] tracking-wide uppercase flex items-center gap-1.5">📄 Visualização de Impressão de Campo</span>
+                <p class="text-[10px] opacity-90 font-medium">Otimizado para impressão em folha A4</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="window.print()" class="bg-white text-emerald-700 font-black uppercase py-2 px-5 rounded-xl border border-white hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all shadow-lg text-[12px] flex items-center gap-2">
+                🖨️ Imprimir / Salvar PDF
+            </button>
+            <button onclick="window.close()" class="bg-emerald-800/60 hover:bg-emerald-950 text-white font-bold py-2 px-4 rounded-xl transition-all text-[12px]">
+                Fechar
+            </button>
+        </div>
+    </div>
+    
+    <div class="max-w-[210mm] mx-auto p-8 my-16 bg-white border shadow-2xl print:shadow-none print:border-none print:my-0 print:p-0">
+        <header class="flex justify-between items-center border-b-4 border-gray-800 pb-4 mb-6">
+            <div class="flex items-center gap-4">
+                <div class="font-black text-[22px] text-gray-900 tracking-tight uppercase leading-none">ATERPA</div>
+                <div class="w-[2px] h-10 bg-gray-400"></div>
+                <div>
+                    <h1 class="text-[15px] font-black text-gray-800 uppercase tracking-tight">Controle de Performance de Equipamentos</h1>
+                    <p class="text-[9px] text-emerald-700 font-black uppercase tracking-widest mt-0.5">Relatório de Aproveitamento em Campo</p>
+                </div>
+            </div>
+            <div class="text-right text-[10px] font-bold text-gray-600 leading-snug border-l-2 border-gray-200 pl-4">
+                <div>Emissão: ${dateGenerated}</div>
+                <div class="text-[11px] font-black text-slate-900 mt-1 bg-slate-100 px-2 py-0.5 rounded">REF: ${monthFilter}</div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="bg-slate-50 p-3 rounded-xl border border-gray-300 shadow-sm">
+                <div class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">🚧 Obra / Unidade</div>
+                <div class="text-[12px] font-black text-slate-800 uppercase truncate">${workFilter}</div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-gray-300 shadow-sm">
+                <div class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">🚜 Frota Analisada</div>
+                <div class="text-[12px] font-black text-emerald-700 uppercase">${metrics.length} equipamentos</div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-gray-300 shadow-sm">
+                <div class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">📊 Critério Ordenação</div>
+                <div class="text-[12px] font-bold text-slate-700 uppercase">Grupo + Produtividade</div>
+            </div>
+        </div>
+
+        <div class="overflow-hidden border border-gray-800 rounded-t-lg shadow-sm">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-800 text-white uppercase text-[9px] font-black tracking-wider border-b-2 border-gray-950" style="background-color: #1f2937 !important;">
+                        <th class="px-2 py-3 border-r border-gray-600 text-center w-[40px]" style="color: white !important;">#</th>
+                        <th class="px-2 py-3 border-r border-gray-600 text-left" style="color: white !important;">Família do Ativo</th>
+                        <th class="px-2 py-3 border-r border-gray-600 text-left" style="color: white !important;">AL / Prefixo</th>
+                        <th class="px-2 py-3 border-r border-gray-600 text-right bg-emerald-900/40" style="color: #a7f3d0 !important;">H. Trabalhadas</th>
+                        <th class="px-2 py-3 border-r border-gray-600 text-right bg-rose-900/40" style="color: #fecdd3 !important;">H. Garantia</th>
+                        <th class="px-2 py-3 border-r border-gray-600 text-right" style="color: #e2e8f0 !important;">Meta Garantia</th>
+                        <th class="px-2 py-3 border-r border-gray-600 text-center bg-gray-700" style="color: #6ee7b7 !important;">% Prod.</th>
+                        <th class="px-2 py-3 text-left" style="color: white !important;">Visual (Verde=Trab.)</th>
+                    </tr>
+                </thead>
+                <tbody class="text-[10px]">
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-6 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2 print:bg-transparent print:border-gray-300">
+            <span class="text-emerald-600 font-black text-lg leading-none">💡</span>
+            <div class="text-[9.5px] text-emerald-800 leading-relaxed font-medium print:text-gray-700">
+                <strong>Instrução para o Encarregado:</strong> Equipamentos no topo de cada família são os mais produtivos no mês atual. Os equipamentos com barras muito curtas ou vermelhas grandes mostram ociosidade ou baixa performance mecânica/operacional na obra.
+            </div>
+        </div>
+
+        <footer class="mt-10 text-center border-t-2 border-dashed border-gray-300 pt-4">
+            <p class="text-[9px] text-gray-400 font-bold tracking-wide uppercase">
+                ATERPA CONSTRUÇÕES S.A. - Relatório Gerencial de Operações de Campo
+            </p>
+            <p class="text-[8px] text-gray-300 mt-1 italic">
+                Documento gerado pelo Dashboard Integrado de Contratos e Equipamentos.
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
+                        `;
+
+                        const printWindow = window.open('', '_blank');
+                        if (!printWindow) {
+                            alert('O bloqueador de popups impediu a visualização do relatório. Por favor, permita popups para este painel.');
+                            return;
+                        }
+                        printWindow.document.open();
+                        printWindow.document.write(printHtml);
+                        printWindow.document.close();
+                        
+                        setTimeout(() => {
+                            printWindow.focus();
+                        }, 350);
+                    },
 
                     openFamilyDrilldown(family) {
 
